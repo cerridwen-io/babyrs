@@ -6,5 +6,12 @@
 !*.md
 !*.rs
 !**/
+!*.sql
+!.env
+!diesel.toml
 !Cargo.toml
+!Cargo.lock
 !LICENSE
+
+# Re-Ignore specific directories
+target/
