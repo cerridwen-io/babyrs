@@ -2,17 +2,18 @@
 *
 
 # Except for
+!.env
 !.gitignore
+!.pre-commit-config.yaml
 !*.md
 !*.rs
-!**/
 !*.sql
-!.env
-!diesel.toml
-!Cargo.toml
+!*.yml
+!**/
 !Cargo.lock
+!Cargo.toml
+!diesel.toml
 !LICENSE
-!.pre-commit-config.yaml
 
 # Re-Ignore specific directories
 target/
