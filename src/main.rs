@@ -1,3 +1,10 @@
+use babyrs::establish_connection;
+use log::info;
+use simple_logger::SimpleLogger;
+
 fn main() {
-    println!("Welcome to babyrs!");
+    SimpleLogger::new().init().unwrap();
+    info!("Welcome to babyrs!");
+
+    establish_connection();
 }
