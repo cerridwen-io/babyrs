@@ -12,6 +12,7 @@
 !Cargo.toml
 !Cargo.lock
 !LICENSE
+!.pre-commit-config.yaml
 
 # Re-Ignore specific directories
 target/
