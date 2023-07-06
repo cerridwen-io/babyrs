@@ -66,7 +66,6 @@ pub fn read_events(connection: &mut SqliteConnection) -> Vec<models::Event> {
     debug!("Reading events");
 
     let results: Vec<models::Event> = events
-        .limit(5)
         .select(models::Event::as_select())
         .load(connection)
         .expect("Error loading events");
@@ -74,6 +73,27 @@ pub fn read_events(connection: &mut SqliteConnection) -> Vec<models::Event> {
     debug!("Read events: {:?}", &results);
 
     results
+}
+
+pub fn update_event(connection: &mut SqliteConnection, event: models::Event) -> usize {
+    use schema::events::dsl::*;
+
+    debug!("Updating event: {:?}", &event);
+
+    diesel::update(events.find(event.id))
+        .set(&event)
+        .execute(connection)
+        .expect("Error updating event")
+}
+
+pub fn delete_event(connection: &mut SqliteConnection, event: models::Event) -> usize {
+    use schema::events::dsl::*;
+
+    debug!("Deleting event: {:?}", &event);
+
+    diesel::delete(events.find(event.id))
+        .execute(connection)
+        .expect("Error deleting event")
 }
 
 #[cfg(test)]
@@ -106,14 +126,14 @@ mod tests {
         assert_eq!(new_event.formula, 20);
         assert_eq!(new_event.pump, 25);
 
-        let new_event = create_event(None, None, None, None, None, None, None);
+        let another_event = create_event(None, None, None, None, None, None, None);
 
-        assert_eq!(new_event.urine, false);
-        assert_eq!(new_event.stool, false);
-        assert_eq!(new_event.skin2skin, 0);
-        assert_eq!(new_event.breastfeed, 0);
-        assert_eq!(new_event.breastmilk, 0);
-        assert_eq!(new_event.formula, 0);
-        assert_eq!(new_event.pump, 0);
+        assert_eq!(another_event.urine, false);
+        assert_eq!(another_event.stool, false);
+        assert_eq!(another_event.skin2skin, 0);
+        assert_eq!(another_event.breastfeed, 0);
+        assert_eq!(another_event.breastmilk, 0);
+        assert_eq!(another_event.formula, 0);
+        assert_eq!(another_event.pump, 0);
     }
 }

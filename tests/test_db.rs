@@ -85,5 +85,103 @@ fn test_read_events() {
 
     let results: Vec<Event> = read_events(connection);
 
-    assert_eq!(results.len(), 5);
+    assert_eq!(results.len(), 7);
+}
+
+#[test]
+fn test_update_event() {
+    use babyrs::schema::events::dsl::*;
+
+    std::env::set_var("DATABASE_URL", ":memory:");
+
+    let connection: &mut SqliteConnection = &mut establish_connection();
+
+    run_migrations(connection).expect("Error running migrations");
+
+    let new_event: NewEvent = create_event(
+        Some(true),
+        Some(true),
+        Some(5),
+        Some(10),
+        Some(15),
+        Some(20),
+        Some(25),
+    );
+
+    write_event(connection, new_event);
+
+    let results: Vec<Event> = events
+        .load::<Event>(connection)
+        .expect("Error loading events");
+
+    assert_eq!(results.len(), 1);
+
+    let mut saved_event = results[0];
+
+    saved_event.urine = false;
+    saved_event.stool = false;
+    saved_event.skin2skin = 0;
+    saved_event.breastfeed = 0;
+    saved_event.breastmilk = 0;
+    saved_event.formula = 0;
+    saved_event.pump = 0;
+
+    assert_eq!(babyrs::update_event(connection, saved_event), 1);
+
+    let results: Vec<Event> = events
+        .load::<Event>(connection)
+        .expect("Error loading events");
+
+    assert_eq!(results.len(), 1);
+
+    let updated_event = &results[0];
+
+    assert_eq!(updated_event.urine, false);
+    assert_eq!(updated_event.stool, false);
+    assert_eq!(updated_event.skin2skin, 0);
+    assert_eq!(updated_event.breastfeed, 0);
+    assert_eq!(updated_event.breastmilk, 0);
+    assert_eq!(updated_event.formula, 0);
+    assert_eq!(updated_event.pump, 0);
+
+    assert_eq!(updated_event.id, saved_event.id);
+}
+
+#[test]
+fn test_delete_event() {
+    use babyrs::schema::events::dsl::*;
+
+    std::env::set_var("DATABASE_URL", ":memory:");
+
+    let connection: &mut SqliteConnection = &mut establish_connection();
+
+    run_migrations(connection).expect("Error running migrations");
+
+    let new_event: NewEvent = create_event(
+        Some(true),
+        Some(true),
+        Some(5),
+        Some(10),
+        Some(15),
+        Some(20),
+        Some(25),
+    );
+
+    write_event(connection, new_event);
+
+    let results: Vec<Event> = events
+        .load::<Event>(connection)
+        .expect("Error loading events");
+
+    assert_eq!(results.len(), 1);
+
+    let saved_event = results[0];
+
+    assert_eq!(babyrs::delete_event(connection, saved_event), 1);
+
+    let results: Vec<Event> = events
+        .load::<Event>(connection)
+        .expect("Error loading events");
+
+    assert_eq!(results.len(), 0);
 }
