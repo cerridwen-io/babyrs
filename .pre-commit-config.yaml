@@ -13,4 +13,5 @@ repos:
     hooks:
     -   id: fmt
     -   id: cargo-check
+        args: [--frozen]
     -   id: clippy

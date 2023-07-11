@@ -1,9 +1,11 @@
+use csv::Reader;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 use dotenvy::dotenv;
 use lazy_static::lazy_static;
-use log::debug;
-use std::env;
+use log::{debug, info};
+use models::NewEvent;
+use std::{env, error::Error, fs::File};
 
 pub mod models;
 pub mod schema;
@@ -94,6 +96,27 @@ pub fn delete_event(connection: &mut SqliteConnection, event: models::Event) -> 
     diesel::delete(events.find(event.id))
         .execute(connection)
         .expect("Error deleting event")
+}
+
+pub fn process_csv(
+    connection: &mut SqliteConnection,
+    file_path: &str,
+) -> Result<(), Box<dyn Error>> {
+    info!("Processing CSV file: {}", &file_path);
+
+    let mut rdr: Reader<File> = Reader::from_path(file_path)?;
+
+    for result in rdr.deserialize() {
+        let record: NewEvent = result?;
+
+        debug!("Read record: {:?}", &record);
+
+        write_event(connection, record);
+    }
+
+    info!("Processed CSV file: {}", &file_path);
+
+    Ok(())
 }
 
 #[cfg(test)]

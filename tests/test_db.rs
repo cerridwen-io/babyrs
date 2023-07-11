@@ -185,3 +185,32 @@ fn test_delete_event() {
 
     assert_eq!(results.len(), 0);
 }
+
+#[test]
+fn test_process_csv() {
+    use babyrs::schema::events::dsl::*;
+
+    std::env::set_var("DATABASE_URL", ":memory:");
+
+    let connection: &mut SqliteConnection = &mut establish_connection();
+
+    run_migrations(connection).expect("Error running migrations");
+
+    babyrs::process_csv(connection, "sample/example.csv").expect("Error processing CSV");
+
+    let results: Vec<Event> = events
+        .load::<Event>(connection)
+        .expect("Error loading events");
+
+    assert_eq!(results.len(), 12);
+
+    let saved_event = &results[0];
+
+    assert_eq!(saved_event.urine, false);
+    assert_eq!(saved_event.stool, false);
+    assert_eq!(saved_event.skin2skin, 60);
+    assert_eq!(saved_event.breastfeed, 0);
+    assert_eq!(saved_event.breastmilk, 0);
+    assert_eq!(saved_event.formula, 0);
+    assert_eq!(saved_event.pump, 0);
+}

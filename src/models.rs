@@ -1,5 +1,6 @@
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
+use serde::Deserialize;
 
 #[derive(Queryable, Selectable, Debug, AsChangeset, Copy, Clone)]
 #[diesel(table_name = crate::schema::events)]
@@ -16,7 +17,7 @@ pub struct Event {
     pub pump: i32,
 }
 
-#[derive(Insertable, Debug)]
+#[derive(Insertable, Debug, Deserialize)]
 #[diesel(table_name = crate::schema::events)]
 pub struct NewEvent {
     pub dt: NaiveDateTime,
