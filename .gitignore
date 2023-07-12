@@ -5,6 +5,7 @@
 !.env
 !.gitignore
 !.pre-commit-config.yaml
+!*.csv
 !*.md
 !*.rs
 !*.sql
