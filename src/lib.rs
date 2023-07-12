@@ -56,7 +56,7 @@ pub fn create_event(
 pub fn write_event(connection: &mut SqliteConnection, new_event: models::NewEvent) -> usize {
     debug!("Writing event: {:?}", &new_event);
 
-    diesel::insert_into(schema::events::table)
+    diesel::insert_or_ignore_into(schema::events::table)
         .values(&new_event)
         .execute(connection)
         .expect("Error saving new event")
@@ -65,7 +65,7 @@ pub fn write_event(connection: &mut SqliteConnection, new_event: models::NewEven
 pub fn read_events(connection: &mut SqliteConnection) -> Vec<models::Event> {
     use schema::events::dsl::*;
 
-    debug!("Reading events");
+    info!("Reading events");
 
     let results: Vec<models::Event> = events
         .select(models::Event::as_select())
