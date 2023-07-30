@@ -1,21 +1,37 @@
-use babyrs::{establish_connection, process_csv, read_events};
-use diesel::SqliteConnection;
+// mod terminal;
+pub mod app;
+pub mod state;
+pub mod terminal;
+pub mod ui;
+
+// use crate::terminal::run;
+// use crate::state::App;
+// use babyrs::establish_connection;
+// use diesel::SqliteConnection;
 use log::info;
 use simple_logger::SimpleLogger;
-use std::io::Error;
+use std::{cell::RefCell, rc::Rc};
 
-fn main() -> Result<(), Error> {
+use crate::app::App;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     SimpleLogger::new().init().unwrap();
     info!("Welcome to babyrs!");
 
-    let connection: &mut SqliteConnection = &mut establish_connection();
+    // Establish connection to database
+    // let connection: &mut SqliteConnection = &mut establish_connection();
+    let app = Rc::new(RefCell::new(App::new()));
+    terminal::run(app)?;
 
-    process_csv(connection, "sample/example.csv").expect("Error processing CSV");
-    let events = read_events(connection);
+    // let app = run(Duration::from_millis(200), true);
 
-    for event in events {
-        println!("{:?}", event);
-    }
+    // Process CSV file
+    // process_csv(connection, "sample/example.csv").expect("Error processing CSV");
+    // let events = read_events(connection);
+
+    // for event in events {
+    //     println!("{:?}", event);
+    // }
 
     Ok(())
 }
