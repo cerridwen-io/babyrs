@@ -1,13 +1,8 @@
-// mod terminal;
 pub mod app;
 pub mod state;
 pub mod terminal;
 pub mod ui;
 
-// use crate::terminal::run;
-// use crate::state::App;
-// use babyrs::establish_connection;
-// use diesel::SqliteConnection;
 use log::info;
 use simple_logger::SimpleLogger;
 use std::{cell::RefCell, rc::Rc};

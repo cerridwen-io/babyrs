@@ -33,6 +33,10 @@ impl App {
 
             match action {
                 Action::Quit => AppReturn::Exit,
+                Action::AddEvent => AppReturn::Continue,
+                Action::DeleteEvent => AppReturn::Continue,
+                Action::UpdateEvent => AppReturn::Continue,
+                Action::LoadCSV => AppReturn::Continue,
             }
         } else {
             warn!("No action found for key: {:?}", key);
@@ -57,17 +61,31 @@ impl App {
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Action {
     Quit,
+    AddEvent,
+    DeleteEvent,
+    UpdateEvent,
+    LoadCSV,
 }
 
 impl Action {
     pub fn iterator() -> Iter<'static, Action> {
-        static ACTIONS: [Action; 1] = [Action::Quit];
+        static ACTIONS: [Action; 5] = [
+            Action::Quit,
+            Action::AddEvent,
+            Action::DeleteEvent,
+            Action::UpdateEvent,
+            Action::LoadCSV,
+        ];
         ACTIONS.iter()
     }
 
     pub fn keys(&self) -> &[Key] {
         match self {
             Action::Quit => &[Key::Ctrl('c'), Key::Char('q')],
+            Action::AddEvent => &[Key::Char('a')],
+            Action::DeleteEvent => &[Key::Char('d')],
+            Action::UpdateEvent => &[Key::Char('u')],
+            Action::LoadCSV => &[Key::Char('l')],
         }
     }
 }
@@ -76,6 +94,10 @@ impl Display for Action {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str = match self {
             Action::Quit => "Quit",
+            Action::AddEvent => "Add Event",
+            Action::DeleteEvent => "Delete Event",
+            Action::UpdateEvent => "Update Event",
+            Action::LoadCSV => "Load CSV",
         };
         write!(f, "{}", str)
     }

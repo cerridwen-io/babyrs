@@ -1,7 +1,9 @@
 use crossterm::{
-    event,
-    terminal::{disable_raw_mode, enable_raw_mode},
+    event::{self, DisableMouseCapture, EnableMouseCapture},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use ratatui::{backend::CrosstermBackend, Terminal};
 use std::{
     cell::RefCell,
     fmt::{self, Display, Formatter},
@@ -11,7 +13,6 @@ use std::{
     thread,
     time::Duration,
 };
-use tui::{backend::CrosstermBackend, Terminal};
 
 use crate::app::{App, AppReturn};
 use crate::ui;
@@ -141,8 +142,9 @@ impl From<event::KeyEvent> for Key {
 
 pub fn run(app: Rc<RefCell<App>>) -> Result<(), Box<dyn std::error::Error>> {
     // Setup terminal
-    let stdout = stdout();
     enable_raw_mode()?;
+    let mut stdout = stdout();
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
@@ -169,9 +171,14 @@ pub fn run(app: Rc<RefCell<App>>) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Restore terminal
+    disable_raw_mode()?;
+    execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
     terminal.clear()?;
     terminal.show_cursor()?;
-    disable_raw_mode()?;
 
     Ok(())
 }

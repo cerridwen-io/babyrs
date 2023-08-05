@@ -1,13 +1,15 @@
 use crate::app::{Actions, App};
 use crate::state::AppState;
-use tui::{
+use ratatui::{
     backend::Backend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    text::{Span, Spans},
+    text::{Line, Span},
     widgets::{Block, BorderType, Borders, Cell, Paragraph, Row, Table},
     Frame,
 };
+
+// use tui_logger::TuiLoggerWidget;
 
 pub fn draw<B>(rect: &mut Frame<B>, app: &App)
 where
@@ -19,7 +21,15 @@ where
     // Vertical layout
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Min(10)].as_ref())
+        .constraints(
+            [
+                Constraint::Length(3),
+                Constraint::Min(10),
+                Constraint::Length(3),
+                Constraint::Length(12),
+            ]
+            .as_ref(),
+        )
         .split(size);
 
     // Title
@@ -38,6 +48,10 @@ where
     // Menu
     let menu = draw_menu(app.actions());
     rect.render_widget(menu, body_chunks[1]);
+
+    // Logs
+    // let logs = draw_logs();
+    // rect.render_widget(logs, chunks[2]);
 }
 
 fn draw_title<'a>() -> Paragraph<'a> {
@@ -60,8 +74,8 @@ fn draw_body<'a>(loading: bool, state: &AppState) -> Paragraph<'a> {
     };
 
     Paragraph::new(vec![
-        Spans::from(Span::raw(loading_text)),
-        Spans::from(Span::raw(tick_text)),
+        Line::from(Span::raw(loading_text)),
+        Line::from(Span::raw(tick_text)),
     ])
     .style(Style::default().fg(Color::White))
     .alignment(Alignment::Left)
@@ -124,3 +138,19 @@ fn check_size(rect: &Rect) {
         );
     }
 }
+
+// fn draw_logs<'a>() -> TuiLoggerWidget<'a> {
+//     TuiLoggerWidget::default()
+//         .style_error(Style::default().fg(Color::Red))
+//         .style_debug(Style::default().fg(Color::Green))
+//         .style_warn(Style::default().fg(Color::Yellow))
+//         .style_trace(Style::default().fg(Color::Gray))
+//         .style_info(Style::default().fg(Color::Blue))
+//         .block(
+//             Block::default()
+//                 .title("Logs")
+//                 .border_style(Style::default().fg(Color::White).bg(Color::Black))
+//                 .borders(Borders::ALL),
+//         )
+//         .style(Style::default().fg(Color::White).bg(Color::Black))
+// }
