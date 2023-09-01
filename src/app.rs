@@ -1,6 +1,6 @@
 use crate::state::AppState;
-use crate::terminal::Key;
-use ::log::{debug, warn};
+use crate::terminal_ui::Key;
+use log::{debug, warn};
 use std::{
     collections::HashMap,
     fmt::{self, Display},
