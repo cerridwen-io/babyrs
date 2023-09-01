@@ -3,12 +3,10 @@ pub mod state;
 pub mod terminal_ui;
 
 use log::info;
-use simple_logger::SimpleLogger;
 
 use crate::app::App;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    SimpleLogger::new().init().unwrap();
     info!("Welcome to babyrs!");
 
     // Establish connection to database

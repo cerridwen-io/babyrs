@@ -13,7 +13,6 @@ use ratatui::{
 };
 use std::{
     fmt::{self, Display, Formatter},
-    io::stdout,
     sync::mpsc::{channel, Receiver, RecvError, Sender},
     thread,
     time::Duration,
@@ -293,9 +292,9 @@ fn check_size(rect: &Rect) {
 pub fn start_ui(mut app: App) -> Result<(), Box<dyn std::error::Error>> {
     // Setup terminal
     enable_raw_mode()?;
-    let mut stdout = stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-    let backend = CrosstermBackend::new(stdout);
+    // let mut stdout: std::io::Stdout = stdout();
+    execute!(std::io::stderr(), EnterAlternateScreen, EnableMouseCapture)?;
+    let backend = CrosstermBackend::new(std::io::stderr());
     let mut terminal = Terminal::new(backend)?;
 
     terminal.clear()?;
