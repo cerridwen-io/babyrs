@@ -1,5 +1,5 @@
-use crate::state::AppState;
-use crate::terminal_ui::Key;
+use crate::terminal::events::Key;
+use crate::terminal::state::AppState;
 use log::{debug, warn};
 use std::{
     collections::HashMap,

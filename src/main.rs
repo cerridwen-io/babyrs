@@ -1,10 +1,8 @@
-pub mod app;
-pub mod state;
-pub mod terminal_ui;
+pub mod terminal;
 
 use log::info;
 
-use crate::app::App;
+use crate::terminal::app::App;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Welcome to babyrs!");
@@ -12,7 +10,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Establish connection to database
     // let connection: &mut SqliteConnection = &mut establish_connection();
     let app = App::new();
-    terminal_ui::start_ui(app)?;
+    terminal::start_ui(app)?;
 
     // let app = run(Duration::from_millis(200), true);
 

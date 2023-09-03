@@ -4,7 +4,7 @@ use diesel::sqlite::SqliteConnection;
 use dotenvy::dotenv;
 use lazy_static::lazy_static;
 use log::{debug, info};
-use models::NewEvent;
+use models::{BabyEvent, NewBabyEvent};
 use std::{env, error::Error, fs::File};
 
 pub mod models;
@@ -37,11 +37,11 @@ pub fn create_event(
     breastmilk: Option<u16>,
     formula: Option<u16>,
     pump: Option<u16>,
-) -> models::NewEvent {
+) -> NewBabyEvent {
     debug!("Creating event - urine: {:?}, stool: {:?}, skin2skin: {:?}, breastfeed: {:?}, breastmilk: {:?}, formula: {:?}, pump: {:?}",
         &urine, &stool, &skin2skin, &breastfeed, &breastmilk, &formula, &pump);
 
-    models::NewEvent {
+    NewBabyEvent {
         dt: chrono::Local::now().naive_local(),
         urine: urine.unwrap_or(false),
         stool: stool.unwrap_or(false),
@@ -53,7 +53,7 @@ pub fn create_event(
     }
 }
 
-pub fn write_event(connection: &mut SqliteConnection, new_event: models::NewEvent) -> usize {
+pub fn write_event(connection: &mut SqliteConnection, new_event: NewBabyEvent) -> usize {
     debug!("Writing event: {:?}", &new_event);
 
     diesel::insert_or_ignore_into(schema::events::table)
@@ -62,13 +62,13 @@ pub fn write_event(connection: &mut SqliteConnection, new_event: models::NewEven
         .expect("Error saving new event")
 }
 
-pub fn read_events(connection: &mut SqliteConnection) -> Vec<models::Event> {
+pub fn read_events(connection: &mut SqliteConnection) -> Vec<BabyEvent> {
     use schema::events::dsl::*;
 
     info!("Reading events");
 
-    let results: Vec<models::Event> = events
-        .select(models::Event::as_select())
+    let results: Vec<BabyEvent> = events
+        .select(BabyEvent::as_select())
         .load(connection)
         .expect("Error loading events");
 
@@ -77,7 +77,7 @@ pub fn read_events(connection: &mut SqliteConnection) -> Vec<models::Event> {
     results
 }
 
-pub fn update_event(connection: &mut SqliteConnection, event: models::Event) -> usize {
+pub fn update_event(connection: &mut SqliteConnection, event: BabyEvent) -> usize {
     use schema::events::dsl::*;
 
     debug!("Updating event: {:?}", &event);
@@ -88,7 +88,7 @@ pub fn update_event(connection: &mut SqliteConnection, event: models::Event) -> 
         .expect("Error updating event")
 }
 
-pub fn delete_event(connection: &mut SqliteConnection, event: models::Event) -> usize {
+pub fn delete_event(connection: &mut SqliteConnection, event: BabyEvent) -> usize {
     use schema::events::dsl::*;
 
     debug!("Deleting event: {:?}", &event);
@@ -107,7 +107,7 @@ pub fn process_csv(
     let mut rdr: Reader<File> = Reader::from_path(file_path)?;
 
     for result in rdr.deserialize() {
-        let record: NewEvent = result?;
+        let record: NewBabyEvent = result?;
 
         debug!("Read record: {:?}", &record);
 

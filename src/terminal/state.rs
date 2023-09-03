@@ -1,16 +1,16 @@
-use babyrs::models::Event;
+use babyrs::models::BabyEvent;
 
 pub enum AppState {
     Init,
     Initialized {
         counter_tick: u64,
-        events: Vec<Event>,
+        events: Vec<BabyEvent>,
     },
 }
 
 impl AppState {
     pub fn initialized() -> Self {
-        let _events: Vec<Event> = Vec::new();
+        let _events: Vec<BabyEvent> = Vec::new();
         let counter_tick = 0;
 
         Self::Initialized {

@@ -5,7 +5,7 @@ use serde::Deserialize;
 #[derive(Queryable, Selectable, Debug, AsChangeset, Copy, Clone)]
 #[diesel(table_name = crate::schema::events)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub struct Event {
+pub struct BabyEvent {
     pub id: i32,
     pub dt: NaiveDateTime,
     pub urine: bool,
@@ -19,7 +19,7 @@ pub struct Event {
 
 #[derive(Insertable, Debug, Deserialize)]
 #[diesel(table_name = crate::schema::events)]
-pub struct NewEvent {
+pub struct NewBabyEvent {
     pub dt: NaiveDateTime,
     pub urine: bool,
     pub stool: bool,

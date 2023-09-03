@@ -3,7 +3,7 @@ use diesel::prelude::*;
 use diesel::sqlite::Sqlite;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
-use babyrs::models::{Event, NewEvent};
+use babyrs::models::{BabyEvent, NewBabyEvent};
 use std::error::Error;
 
 fn run_migrations(
@@ -33,7 +33,7 @@ fn test_write_event() {
 
     run_migrations(connection).expect("Error running migrations");
 
-    let new_event: NewEvent = create_event(
+    let new_event: NewBabyEvent = create_event(
         Some(true),
         Some(true),
         Some(5),
@@ -45,8 +45,8 @@ fn test_write_event() {
 
     assert_eq!(write_event(connection, new_event), 1);
 
-    let results: Vec<Event> = events
-        .load::<Event>(connection)
+    let results: Vec<BabyEvent> = events
+        .load::<BabyEvent>(connection)
         .expect("Error loading events");
 
     assert_eq!(results.len(), 1);
@@ -71,7 +71,7 @@ fn test_read_events() {
     run_migrations(connection).expect("Error running migrations");
 
     for i in 0..7 {
-        let new_event: NewEvent = create_event(
+        let new_event: NewBabyEvent = create_event(
             Some(true),
             Some(true),
             Some(i),
@@ -83,7 +83,7 @@ fn test_read_events() {
         write_event(connection, new_event);
     }
 
-    let results: Vec<Event> = read_events(connection);
+    let results: Vec<BabyEvent> = read_events(connection);
 
     assert_eq!(results.len(), 7);
 }
@@ -98,7 +98,7 @@ fn test_update_event() {
 
     run_migrations(connection).expect("Error running migrations");
 
-    let new_event: NewEvent = create_event(
+    let new_event: NewBabyEvent = create_event(
         Some(true),
         Some(true),
         Some(5),
@@ -110,8 +110,8 @@ fn test_update_event() {
 
     write_event(connection, new_event);
 
-    let results: Vec<Event> = events
-        .load::<Event>(connection)
+    let results: Vec<BabyEvent> = events
+        .load::<BabyEvent>(connection)
         .expect("Error loading events");
 
     assert_eq!(results.len(), 1);
@@ -128,8 +128,8 @@ fn test_update_event() {
 
     assert_eq!(babyrs::update_event(connection, saved_event), 1);
 
-    let results: Vec<Event> = events
-        .load::<Event>(connection)
+    let results: Vec<BabyEvent> = events
+        .load::<BabyEvent>(connection)
         .expect("Error loading events");
 
     assert_eq!(results.len(), 1);
@@ -157,7 +157,7 @@ fn test_delete_event() {
 
     run_migrations(connection).expect("Error running migrations");
 
-    let new_event: NewEvent = create_event(
+    let new_event: NewBabyEvent = create_event(
         Some(true),
         Some(true),
         Some(5),
@@ -169,8 +169,8 @@ fn test_delete_event() {
 
     write_event(connection, new_event);
 
-    let results: Vec<Event> = events
-        .load::<Event>(connection)
+    let results: Vec<BabyEvent> = events
+        .load::<BabyEvent>(connection)
         .expect("Error loading events");
 
     assert_eq!(results.len(), 1);
@@ -179,8 +179,8 @@ fn test_delete_event() {
 
     assert_eq!(babyrs::delete_event(connection, saved_event), 1);
 
-    let results: Vec<Event> = events
-        .load::<Event>(connection)
+    let results: Vec<BabyEvent> = events
+        .load::<BabyEvent>(connection)
         .expect("Error loading events");
 
     assert_eq!(results.len(), 0);
@@ -198,8 +198,8 @@ fn test_process_csv() {
 
     babyrs::process_csv(connection, "sample/example.csv").expect("Error processing CSV");
 
-    let results: Vec<Event> = events
-        .load::<Event>(connection)
+    let results: Vec<BabyEvent> = events
+        .load::<BabyEvent>(connection)
         .expect("Error loading events");
 
     assert_eq!(results.len(), 12);
