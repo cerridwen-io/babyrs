@@ -1,3 +1,6 @@
+/// Module handling database operations for baby events.
+///
+/// This module provides functionalities for CRUD operations as well as processing CSV files.
 use csv::Reader;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
@@ -14,12 +17,22 @@ lazy_static! {
     static ref DB_KEY: &'static str = "DATABASE_URL";
 }
 
+/// Fetches the database URL from environment variables.
+///
+/// # Returns
+///
+/// A string containing the database URL.
 fn get_database_url() -> String {
     dotenv().ok();
 
     env::var(*DB_KEY).expect("DATABASE_URL must be set")
 }
 
+/// Establishes a connection to the SQLite database.
+///
+/// # Returns
+///
+/// An established SQLiteConnection object.
 pub fn establish_connection() -> SqliteConnection {
     let database_url: String = get_database_url();
 
@@ -29,6 +42,15 @@ pub fn establish_connection() -> SqliteConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
+/// Creates a new baby event.
+///
+/// # Arguments
+///
+/// Various optional arguments for different kinds of baby events.
+///
+/// # Returns
+///
+/// A NewBabyEvent object.
 pub fn create_event(
     urine: Option<bool>,
     stool: Option<bool>,
@@ -53,6 +75,16 @@ pub fn create_event(
     }
 }
 
+/// Writes a new baby event into the database.
+///
+/// # Arguments
+///
+/// - `connection`: The database connection.
+/// - `new_event`: The baby event to write.
+///
+/// # Returns
+///
+/// The number of rows inserted.
 pub fn write_event(connection: &mut SqliteConnection, new_event: NewBabyEvent) -> usize {
     debug!("Writing event: {:?}", &new_event);
 
@@ -62,6 +94,15 @@ pub fn write_event(connection: &mut SqliteConnection, new_event: NewBabyEvent) -
         .expect("Error saving new event")
 }
 
+/// Reads baby events from the database.
+///
+/// # Arguments
+///
+/// - `connection`: The database connection.
+///
+/// # Returns
+///
+/// A vector of BabyEvent objects.
 pub fn read_events(connection: &mut SqliteConnection) -> Vec<BabyEvent> {
     use schema::events::dsl::*;
 
@@ -77,6 +118,16 @@ pub fn read_events(connection: &mut SqliteConnection) -> Vec<BabyEvent> {
     results
 }
 
+/// Updates an existing baby event in the database.
+///
+/// # Arguments
+///
+/// - `connection`: The database connection.
+/// - `event`: The baby event to update.
+///
+/// # Returns
+///
+/// The number of rows updated.
 pub fn update_event(connection: &mut SqliteConnection, event: BabyEvent) -> usize {
     use schema::events::dsl::*;
 
@@ -88,6 +139,16 @@ pub fn update_event(connection: &mut SqliteConnection, event: BabyEvent) -> usiz
         .expect("Error updating event")
 }
 
+/// Deletes an existing baby event in the database.
+///
+/// # Arguments
+///
+/// - `connection`: The database connection.
+/// - `event`: The baby event to delete.
+///
+/// # Returns
+///
+/// The number of rows deleted.
 pub fn delete_event(connection: &mut SqliteConnection, event: BabyEvent) -> usize {
     use schema::events::dsl::*;
 
@@ -98,6 +159,16 @@ pub fn delete_event(connection: &mut SqliteConnection, event: BabyEvent) -> usiz
         .expect("Error deleting event")
 }
 
+/// Processes a CSV file and writes the baby events into the database.
+///
+/// # Arguments
+///
+/// - `connection`: The database connection.
+/// - `file_path`: The path of the CSV file.
+///
+/// # Returns
+///
+/// Returns a `Result` indicating success or an error.
 pub fn process_csv(
     connection: &mut SqliteConnection,
     file_path: &str,
@@ -121,15 +192,18 @@ pub fn process_csv(
 
 #[cfg(test)]
 mod tests {
+    /// Tests for the database module.
     use super::*;
 
     #[test]
+    /// Test to ensure get_database_url returns the correct database URL.
     fn test_get_database_url() {
         std::env::set_var(*DB_KEY, "sqlite://test.db");
         assert_eq!(get_database_url(), "sqlite://test.db");
     }
 
     #[test]
+    /// Test to ensure create_event creates the event correctly.
     fn test_create_event() {
         let new_event = create_event(
             Some(true),

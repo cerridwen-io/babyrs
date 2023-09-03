@@ -17,10 +17,19 @@ use ratatui::{
 use std::time::Duration;
 use ui::draw_ui;
 
+/// Starts the user interface for the application.
+///
+/// # Parameters
+///
+/// * `app`: The `App` instance that holds the state and actions.
+///
+/// # Returns
+///
+/// Returns a `Result` which is `Ok` if the UI starts successfully,
+/// or an `Err` containing an error.
 pub fn start_ui(mut app: App) -> Result<(), Box<dyn std::error::Error>> {
     // Setup terminal
     enable_raw_mode()?;
-    // let mut stdout: std::io::Stdout = stdout();
     execute!(std::io::stderr(), EnterAlternateScreen, EnableMouseCapture)?;
     let backend = CrosstermBackend::new(std::io::stderr());
     let mut terminal = Terminal::new(backend)?;
@@ -38,9 +47,10 @@ pub fn start_ui(mut app: App) -> Result<(), Box<dyn std::error::Error>> {
         LeaveAlternateScreen,
         DisableMouseCapture
     )?;
-    // terminal.clear()?;
+
     terminal.show_cursor()?;
 
+    // Log any errors encountered while running the app
     if let Err(err) = res {
         println!("{err:?}");
     }
@@ -48,6 +58,21 @@ pub fn start_ui(mut app: App) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+/// Runs the app within a terminal.
+///
+/// # Type Parameters
+///
+/// * `B`: Backend for the terminal, implementing `ratatui::backend::Backend`.
+///
+/// # Parameters
+///
+/// * `terminal`: Mutable reference to the terminal.
+/// * `app`: Mutable reference to the `App` instance.
+///
+/// # Returns
+///
+/// Returns a `Result` which is `Ok` if the app runs successfully,
+/// or an `Err` containing an error.
 fn run_app<B: Backend>(
     terminal: &mut Terminal<B>,
     app: &mut App,
@@ -55,14 +80,18 @@ fn run_app<B: Backend>(
     let tick_rate = Duration::from_millis(200);
     let events = Events::new(tick_rate);
 
+    // Main event loop
     loop {
+        // Draw the user interface
         terminal.draw(|f| draw_ui(f, app))?;
 
+        // Handle input events
         let result = match events.next()? {
             InputEvent::Input(key) => app.do_action(key),
             InputEvent::Tick => app.update_tick(),
         };
 
+        // Exit if the app returns an exit code
         if result == AppReturn::Exit {
             return Ok(());
         }

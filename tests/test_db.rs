@@ -1,3 +1,5 @@
+//! This module contains integration tests for baby-related event handling using the babyrs library.
+
 use babyrs::{create_event, establish_connection, read_events, write_event};
 use diesel::prelude::*;
 use diesel::sqlite::Sqlite;
@@ -6,6 +8,15 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 use babyrs::models::{BabyEvent, NewBabyEvent};
 use std::error::Error;
 
+/// Run pending database migrations.
+///
+/// # Arguments
+///
+/// * `connection`: Mutable reference to the database connection
+///
+/// # Errors
+///
+/// Returns an error if the migration fails.
 fn run_migrations(
     connection: &mut impl MigrationHarness<Sqlite>,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
@@ -14,6 +25,9 @@ fn run_migrations(
     Ok(())
 }
 
+/// Test database connection establishment.
+///
+/// This test checks if a SQLite database connection can be established.
 #[test]
 fn test_establish_connection() {
     std::env::set_var("DATABASE_URL", ":memory:");
@@ -23,6 +37,9 @@ fn test_establish_connection() {
     assert!(diesel::sql_query("SELECT 1").execute(connection).is_ok());
 }
 
+/// Test writing a new event to the database.
+///
+/// This test writes a single event to an empty database and then verifies its presence.
 #[test]
 fn test_write_event() {
     use babyrs::schema::events::dsl::*;
@@ -62,6 +79,9 @@ fn test_write_event() {
     assert_eq!(saved_event.pump, 25);
 }
 
+/// Test reading events from the database.
+///
+/// This test writes multiple events to the database and then verifies their presence.
 #[test]
 fn test_read_events() {
     std::env::set_var("DATABASE_URL", ":memory:");
@@ -88,6 +108,9 @@ fn test_read_events() {
     assert_eq!(results.len(), 7);
 }
 
+/// Test updating an existing event in the database.
+///
+/// This test writes an event to the database, updates it, and then checks if the update is reflected.
 #[test]
 fn test_update_event() {
     use babyrs::schema::events::dsl::*;
@@ -147,6 +170,9 @@ fn test_update_event() {
     assert_eq!(updated_event.id, saved_event.id);
 }
 
+/// Test deleting an event from the database.
+///
+/// This test writes an event to the database, deletes it, and then verifies that it was deleted.
 #[test]
 fn test_delete_event() {
     use babyrs::schema::events::dsl::*;
@@ -186,6 +212,9 @@ fn test_delete_event() {
     assert_eq!(results.len(), 0);
 }
 
+/// Test processing CSV files for event data.
+///
+/// This test reads events from a sample CSV file and writes them to the database, verifying their presence afterwards.
 #[test]
 fn test_process_csv() {
     use babyrs::schema::events::dsl::*;

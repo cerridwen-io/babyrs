@@ -10,6 +10,18 @@ use ratatui::{
 use crate::terminal::app::{Actions, App};
 use crate::terminal::state::AppState;
 
+/// Renders the user interface.
+///
+/// This function draws the title, body, and menu on the terminal window.
+///
+/// # Arguments
+///
+/// - `rect`: The frame on which to draw the UI.
+/// - `app`: The current application state.
+///
+/// # Type Parameters
+///
+/// - `B`: Represents the backend, must implement `Backend` trait.
 pub fn draw_ui<B>(rect: &mut Frame<B>, app: &App)
 where
     B: Backend,
@@ -53,6 +65,11 @@ where
     // rect.render_widget(logs, chunks[2]);
 }
 
+/// Creates a `Paragraph` widget for the title.
+///
+/// # Returns
+///
+/// Returns a `Paragraph` widget configured to display the title.
 fn draw_title<'a>() -> Paragraph<'a> {
     Paragraph::new("BabyRS")
         .style(Style::default().fg(Color::Yellow))
@@ -64,6 +81,16 @@ fn draw_title<'a>() -> Paragraph<'a> {
         )
 }
 
+/// Creates a `Paragraph` widget for the body of the UI.
+///
+/// # Arguments
+///
+/// - `loading`: Indicates if the body should show a loading state.
+/// - `state`: Current `AppState` to display the tick count.
+///
+/// # Returns
+///
+/// Returns a `Paragraph` widget configured to display the body content.
 fn draw_body<'a>(loading: bool, state: &AppState) -> Paragraph<'a> {
     let loading_text = if loading { "Loading..." } else { "" };
     let tick_text = if let Some(ticks) = state.count_tick() {
@@ -85,6 +112,15 @@ fn draw_body<'a>(loading: bool, state: &AppState) -> Paragraph<'a> {
     )
 }
 
+/// Creates a `Table` widget for the action menu.
+///
+/// # Arguments
+///
+/// - `actions`: The actions that can be performed in the application.
+///
+/// # Returns
+///
+/// Returns a `Table` widget configured to display the action menu.
 fn draw_menu(actions: &Actions) -> Table {
     let key_style = Style::default().fg(Color::White);
     let menu_style = Style::default().fg(Color::White);
@@ -122,6 +158,15 @@ fn draw_menu(actions: &Actions) -> Table {
         .column_spacing(1)
 }
 
+/// Validates the terminal size to ensure it meets minimum requirements.
+///
+/// # Arguments
+///
+/// - `rect`: The current terminal window size.
+///
+/// # Panics
+///
+/// This function will panic if the terminal size is too small.
 fn check_size(rect: &Rect) {
     if rect.width < 52 {
         panic!(
