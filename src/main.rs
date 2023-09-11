@@ -12,15 +12,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = App::new();
     terminal::start_ui(app)?;
 
-    // let app = run(Duration::from_millis(200), true);
-
     // Process CSV file
     // process_csv(connection, "sample/example.csv").expect("Error processing CSV");
     // let events = read_events(connection);
-
-    // for event in events {
-    //     println!("{:?}", event);
-    // }
 
     Ok(())
 }

@@ -268,6 +268,83 @@ pub fn calculate_monthly_volume(daily_volume: Vec<(NaiveDate, i32)>) -> Vec<(Nai
     monthly_volume
 }
 
+/// Calculate total volume of milk pumped for each day.
+///
+/// # Arguments
+///
+/// - `events`: A vector of BabyEvent objects.
+///
+/// # Returns
+///
+/// A vector of tuples containing the date and total volume of milk pumped.
+pub fn calculate_daily_pumped(events: Vec<BabyEvent>) -> Vec<(NaiveDate, i32)> {
+    let mut daily_pumped: Vec<(NaiveDate, i32)> = Vec::new();
+
+    for event in events {
+        let date = event.dt.date();
+        let volume = event.pump;
+
+        if let Some((_, tmp)) = daily_pumped.iter_mut().find(|(d, _)| d == &date) {
+            *tmp += volume;
+        } else {
+            daily_pumped.push((date, volume));
+        }
+    }
+
+    daily_pumped
+}
+
+/// Calculate total volume of milk pumped for each week, starting on Mondays.
+///
+/// # Arguments
+///
+/// - `daily_pumped`: A vector of tuples containing the date and total volume of milk pumped.
+///
+/// # Returns
+///
+/// A vector of tuples containing the start date of the week (Monday) and the total volume of milk pumped for that week.
+pub fn calculate_weekly_pumped(daily_pumped: Vec<(NaiveDate, i32)>) -> Vec<(NaiveDate, i32)> {
+    let mut weekly_pumped: Vec<(NaiveDate, i32)> = Vec::new();
+
+    for (date, volume) in daily_pumped {
+        let days_from_monday = date.weekday().num_days_from_monday();
+        let start_date = date - chrono::Duration::days(days_from_monday as i64);
+
+        if let Some((_, tmp)) = weekly_pumped.iter_mut().find(|(d, _)| d == &start_date) {
+            *tmp += volume;
+        } else {
+            weekly_pumped.push((start_date, volume));
+        }
+    }
+
+    weekly_pumped
+}
+
+/// Calculate total volume of milk pumped for each month.
+///
+/// # Arguments
+///
+/// - `daily_pumped`: A vector of tuples containing the date and total volume of milk pumped.
+///
+/// # Returns
+///
+/// A vector of tuples containing the start date of the month and the total volume of milk pumped for that month.
+pub fn calculate_monthly_pumped(daily_pumped: Vec<(NaiveDate, i32)>) -> Vec<(NaiveDate, i32)> {
+    let mut monthly_pumped: Vec<(NaiveDate, i32)> = Vec::new();
+
+    for (date, volume) in daily_pumped {
+        let start_date = NaiveDate::from_ymd_opt(date.year(), date.month(), 1).unwrap();
+
+        if let Some((_, tmp)) = monthly_pumped.iter_mut().find(|(d, _)| d == &start_date) {
+            *tmp += volume;
+        } else {
+            monthly_pumped.push((start_date, volume));
+        }
+    }
+
+    monthly_pumped
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -313,7 +390,7 @@ mod tests {
 
     /// Test to ensure daily volume is calculated correctly.
     #[test]
-    fn test_calculate_volume() {
+    fn test_calculate_daily_volume() {
         let date_time1 = NaiveDate::from_ymd_opt(2023, 1, 1)
             .unwrap()
             .and_hms_opt(8, 0, 0)
@@ -381,9 +458,9 @@ mod tests {
         assert_eq!(result[1], (date_time3.date(), 200));
     }
 
-    /// Test to ensure monthly volume is calculated correctly.
+    /// Test to ensure weekly volume is calculated correctly.
     #[test]
-    fn test_calculate_rolling_week_volume() {
+    fn test_calculate_weekly_volume() {
         let monday = NaiveDate::from_ymd_opt(2023, 9, 4).unwrap();
         let tuesday = NaiveDate::from_ymd_opt(2023, 9, 5).unwrap();
         let wednesday = NaiveDate::from_ymd_opt(2023, 9, 6).unwrap();
@@ -426,5 +503,122 @@ mod tests {
         assert_eq!(result.len(), 2); // Expecting 2 consolidated months
         assert_eq!(result[0], (date1, 600)); // 600 is the total for September
         assert_eq!(result[1], (date_next_month, 400)); // 400 for October
+    }
+
+    /// Test to ensure daily pumped volume is calculated correctly.
+    #[test]
+    fn test_calculate_daily_pumped() {
+        let date_time1 = NaiveDate::from_ymd_opt(2023, 1, 1)
+            .unwrap()
+            .and_hms_opt(8, 0, 0)
+            .unwrap();
+        let date_time2 = NaiveDate::from_ymd_opt(2023, 1, 1)
+            .unwrap()
+            .and_hms_opt(10, 0, 0)
+            .unwrap();
+        let date_time3 = NaiveDate::from_ymd_opt(2023, 1, 2)
+            .unwrap()
+            .and_hms_opt(8, 0, 0)
+            .unwrap();
+
+        let events = vec![
+            BabyEvent {
+                id: 1,
+                urine: false,
+                stool: false,
+                skin2skin: 0,
+                breastfeed: 0,
+                pump: 0,
+                dt: date_time1,
+                breastmilk: 0,
+                formula: 0,
+            },
+            BabyEvent {
+                id: 2,
+                urine: false,
+                stool: false,
+                skin2skin: 0,
+                breastfeed: 0,
+                pump: 100,
+                dt: date_time2,
+                breastmilk: 0,
+                formula: 0,
+            },
+            BabyEvent {
+                id: 3,
+                urine: false,
+                stool: false,
+                skin2skin: 0,
+                breastfeed: 0,
+                pump: 50,
+                dt: date_time3,
+                breastmilk: 0,
+                formula: 0,
+            },
+            BabyEvent {
+                id: 4,
+                urine: false,
+                stool: false,
+                skin2skin: 0,
+                breastfeed: 0,
+                pump: 225,
+                dt: date_time3,
+                breastmilk: 0,
+                formula: 0,
+            },
+        ];
+
+        let result = calculate_daily_pumped(events);
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0], (date_time1.date(), 100));
+        assert_eq!(result[1], (date_time3.date(), 275));
+    }
+
+    /// Test to ensure weekly pumped volume is calculated correctly.
+    #[test]
+    fn test_calculate_weekly_pumped() {
+        let monday = NaiveDate::from_ymd_opt(2023, 9, 4).unwrap();
+        let tuesday = NaiveDate::from_ymd_opt(2023, 9, 5).unwrap();
+        let wednesday = NaiveDate::from_ymd_opt(2023, 9, 6).unwrap();
+        let next_monday = NaiveDate::from_ymd_opt(2023, 9, 11).unwrap();
+
+        let daily_volumes = vec![
+            (monday, 100),
+            (tuesday, 100),
+            (wednesday, 50),
+            (next_monday, 75),
+        ];
+
+        let result = calculate_weekly_pumped(daily_volumes);
+
+        assert_eq!(result.len(), 2); // Expecting 2 consolidated weeks
+        assert_eq!(result[0], (monday, 250)); // 250 is the total for the first week (monday + tuesday + wednesday)
+        assert_eq!(result[1], (next_monday, 75)); // 75 for the next week
+    }
+
+    /// Test to ensure monthly pumped volume is calculated correctly.
+    #[test]
+    fn test_calculate_monthly_pumped() {
+        // Setup
+        let date1 = NaiveDate::from_ymd_opt(2023, 9, 1).unwrap();
+        let date2 = NaiveDate::from_ymd_opt(2023, 9, 15).unwrap();
+        let date3 = NaiveDate::from_ymd_opt(2023, 9, 30).unwrap();
+        let date_next_month = NaiveDate::from_ymd_opt(2023, 10, 1).unwrap();
+
+        let daily_volumes = vec![
+            (date1, 50),
+            (date2, 50),
+            (date3, 30),
+            (date_next_month, 100),
+        ];
+
+        // Action
+        let result = calculate_monthly_volume(daily_volumes);
+
+        // Assert
+        assert_eq!(result.len(), 2); // Expecting 2 consolidated months
+        assert_eq!(result[0], (date1, 130)); // 600 is the total for September
+        assert_eq!(result[1], (date_next_month, 100)); // 400 for October
     }
 }
