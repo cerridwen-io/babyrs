@@ -345,9 +345,179 @@ pub fn calculate_monthly_pumped(daily_pumped: Vec<(NaiveDate, i32)>) -> Vec<(Nai
     monthly_pumped
 }
 
+/// Calculate number of wet diapers for each day.
+///
+/// # Arguments
+///
+/// - `events`: A vector of BabyEvent objects.
+///
+/// # Returns
+///
+/// A vector of tuples containing the date and number of wet diapers.
+pub fn calculate_daily_wet_diapers(events: Vec<BabyEvent>) -> Vec<(NaiveDate, i32)> {
+    let mut daily_wet_diapers: Vec<(NaiveDate, i32)> = Vec::new();
+
+    for event in events {
+        let date = event.dt.date();
+        let wet_diapers = if event.urine { 1 } else { 0 };
+
+        if let Some((_, tmp)) = daily_wet_diapers.iter_mut().find(|(d, _)| d == &date) {
+            *tmp += wet_diapers;
+        } else {
+            daily_wet_diapers.push((date, wet_diapers));
+        }
+    }
+
+    daily_wet_diapers
+}
+
+/// Calculate number of wet diapers for each week, starting on Mondays.
+///
+/// # Arguments
+///
+/// - `daily_wet_diapers`: A vector of tuples containing the date and number of wet diapers.
+///
+/// # Returns
+///
+/// A vector of tuples containing the start date of the week (Monday) and the number of wet diapers for that week.
+pub fn calculate_weekly_wet_diapers(
+    daily_wet_diapers: Vec<(NaiveDate, i32)>,
+) -> Vec<(NaiveDate, i32)> {
+    let mut weekly_wet_diapers: Vec<(NaiveDate, i32)> = Vec::new();
+
+    for (date, wet_diapers) in daily_wet_diapers {
+        let days_from_monday = date.weekday().num_days_from_monday();
+        let start_date = date - chrono::Duration::days(days_from_monday as i64);
+
+        if let Some((_, tmp)) = weekly_wet_diapers
+            .iter_mut()
+            .find(|(d, _)| d == &start_date)
+        {
+            *tmp += wet_diapers;
+        } else {
+            weekly_wet_diapers.push((start_date, wet_diapers));
+        }
+    }
+
+    weekly_wet_diapers
+}
+
+/// Calculate number of poopy diapers for each day.
+///
+/// # Arguments
+///
+/// - `events`: A vector of BabyEvent objects.
+///
+/// # Returns
+///
+/// A vector of tuples containing the date and number of poopy diapers.
+pub fn calculate_daily_poopy_diapers(events: Vec<BabyEvent>) -> Vec<(NaiveDate, i32)> {
+    let mut daily_poopy_diapers: Vec<(NaiveDate, i32)> = Vec::new();
+
+    for event in events {
+        let date = event.dt.date();
+        let poopy_diapers = if event.stool { 1 } else { 0 };
+
+        if let Some((_, tmp)) = daily_poopy_diapers.iter_mut().find(|(d, _)| d == &date) {
+            *tmp += poopy_diapers;
+        } else {
+            daily_poopy_diapers.push((date, poopy_diapers));
+        }
+    }
+
+    daily_poopy_diapers
+}
+
+/// Calculate number of poopy diapers for each week, starting on Mondays.
+///
+/// # Arguments
+///
+/// - `daily_poopy_diapers`: A vector of tuples containing the date and number of poopy diapers.
+///
+/// # Returns
+///
+/// A vector of tuples containing the start date of the week (Monday) and the number of poopy diapers for that week.
+pub fn calculate_weekly_poopy_diapers(
+    daily_poopy_diapers: Vec<(NaiveDate, i32)>,
+) -> Vec<(NaiveDate, i32)> {
+    let mut weekly_poopy_diapers: Vec<(NaiveDate, i32)> = Vec::new();
+
+    for (date, poopy_diapers) in daily_poopy_diapers {
+        let days_from_monday = date.weekday().num_days_from_monday();
+        let start_date = date - chrono::Duration::days(days_from_monday as i64);
+
+        if let Some((_, tmp)) = weekly_poopy_diapers
+            .iter_mut()
+            .find(|(d, _)| d == &start_date)
+        {
+            *tmp += poopy_diapers;
+        } else {
+            weekly_poopy_diapers.push((start_date, poopy_diapers));
+        }
+    }
+
+    weekly_poopy_diapers
+}
+
 #[cfg(test)]
 mod tests {
+    use chrono::NaiveDateTime;
+
     use super::*;
+
+    fn baby_events(
+        date_time1: NaiveDateTime,
+        date_time2: NaiveDateTime,
+        date_time3: NaiveDateTime,
+        date_time4: NaiveDateTime,
+    ) -> Vec<BabyEvent> {
+        vec![
+            BabyEvent {
+                id: 1,
+                urine: true,
+                stool: true,
+                skin2skin: 0,
+                breastfeed: 0,
+                pump: 0,
+                dt: date_time1,
+                breastmilk: 100,
+                formula: 50,
+            },
+            BabyEvent {
+                id: 2,
+                urine: true,
+                stool: false,
+                skin2skin: 0,
+                breastfeed: 0,
+                pump: 100,
+                dt: date_time2,
+                breastmilk: 0,
+                formula: 150,
+            },
+            BabyEvent {
+                id: 3,
+                urine: false,
+                stool: false,
+                skin2skin: 0,
+                breastfeed: 0,
+                pump: 50,
+                dt: date_time3,
+                breastmilk: 50,
+                formula: 50,
+            },
+            BabyEvent {
+                id: 4,
+                urine: false,
+                stool: true,
+                skin2skin: 0,
+                breastfeed: 0,
+                pump: 225,
+                dt: date_time4,
+                breastmilk: 50,
+                formula: 50,
+            },
+        ]
+    }
 
     /// Test to ensure get_database_url returns the correct database URL.
     #[test]
@@ -404,52 +574,7 @@ mod tests {
             .and_hms_opt(8, 0, 0)
             .unwrap();
 
-        let events = vec![
-            BabyEvent {
-                id: 1,
-                urine: false,
-                stool: false,
-                skin2skin: 0,
-                breastfeed: 0,
-                pump: 0,
-                dt: date_time1,
-                breastmilk: 100,
-                formula: 50,
-            },
-            BabyEvent {
-                id: 2,
-                urine: false,
-                stool: false,
-                skin2skin: 0,
-                breastfeed: 0,
-                pump: 0,
-                dt: date_time2,
-                breastmilk: 0,
-                formula: 150,
-            },
-            BabyEvent {
-                id: 3,
-                urine: false,
-                stool: false,
-                skin2skin: 0,
-                breastfeed: 0,
-                pump: 0,
-                dt: date_time3,
-                breastmilk: 50,
-                formula: 50,
-            },
-            BabyEvent {
-                id: 4,
-                urine: false,
-                stool: false,
-                skin2skin: 0,
-                breastfeed: 0,
-                pump: 0,
-                dt: date_time3,
-                breastmilk: 50,
-                formula: 50,
-            },
-        ];
+        let events = baby_events(date_time1, date_time2, date_time3, date_time3);
 
         let result = calculate_daily_volume(events);
 
@@ -521,52 +646,7 @@ mod tests {
             .and_hms_opt(8, 0, 0)
             .unwrap();
 
-        let events = vec![
-            BabyEvent {
-                id: 1,
-                urine: false,
-                stool: false,
-                skin2skin: 0,
-                breastfeed: 0,
-                pump: 0,
-                dt: date_time1,
-                breastmilk: 0,
-                formula: 0,
-            },
-            BabyEvent {
-                id: 2,
-                urine: false,
-                stool: false,
-                skin2skin: 0,
-                breastfeed: 0,
-                pump: 100,
-                dt: date_time2,
-                breastmilk: 0,
-                formula: 0,
-            },
-            BabyEvent {
-                id: 3,
-                urine: false,
-                stool: false,
-                skin2skin: 0,
-                breastfeed: 0,
-                pump: 50,
-                dt: date_time3,
-                breastmilk: 0,
-                formula: 0,
-            },
-            BabyEvent {
-                id: 4,
-                urine: false,
-                stool: false,
-                skin2skin: 0,
-                breastfeed: 0,
-                pump: 225,
-                dt: date_time3,
-                breastmilk: 0,
-                formula: 0,
-            },
-        ];
+        let events = baby_events(date_time1, date_time2, date_time3, date_time3);
 
         let result = calculate_daily_pumped(events);
 
@@ -620,5 +700,89 @@ mod tests {
         assert_eq!(result.len(), 2); // Expecting 2 consolidated months
         assert_eq!(result[0], (date1, 130)); // 600 is the total for September
         assert_eq!(result[1], (date_next_month, 100)); // 400 for October
+    }
+
+    /// Test to ensure daily wet diapers are calculated correctly.
+    #[test]
+    fn test_calculate_daily_wet_diapers() {
+        let date_time1 = NaiveDate::from_ymd_opt(2023, 1, 1)
+            .unwrap()
+            .and_hms_opt(8, 0, 0)
+            .unwrap();
+        let date_time2 = NaiveDate::from_ymd_opt(2023, 1, 1)
+            .unwrap()
+            .and_hms_opt(10, 0, 0)
+            .unwrap();
+        let date_time3 = NaiveDate::from_ymd_opt(2023, 1, 2)
+            .unwrap()
+            .and_hms_opt(8, 0, 0)
+            .unwrap();
+
+        let events = baby_events(date_time1, date_time2, date_time3, date_time3);
+
+        let result = calculate_daily_wet_diapers(events);
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0], (date_time1.date(), 2));
+        assert_eq!(result[1], (date_time3.date(), 0));
+    }
+
+    /// Test to ensure weekly wet diapers are calculated correctly.
+    #[test]
+    fn test_calculate_weekly_wet_diapers() {
+        let monday = NaiveDate::from_ymd_opt(2023, 9, 4).unwrap();
+        let tuesday = NaiveDate::from_ymd_opt(2023, 9, 5).unwrap();
+        let wednesday = NaiveDate::from_ymd_opt(2023, 9, 6).unwrap();
+        let next_monday = NaiveDate::from_ymd_opt(2023, 9, 11).unwrap();
+
+        let daily_volumes = vec![(monday, 1), (tuesday, 2), (wednesday, 3), (next_monday, 4)];
+
+        let result = calculate_weekly_wet_diapers(daily_volumes);
+
+        assert_eq!(result.len(), 2); // Expecting 2 consolidated weeks
+        assert_eq!(result[0], (monday, 6)); // 6 is the total for the first week (monday + tuesday + wednesday)
+        assert_eq!(result[1], (next_monday, 4)); // 4 for the next week
+    }
+
+    /// Test to ensure daily poopy diapers are calculated correctly.
+    #[test]
+    fn test_calculate_daily_poopy_diapers() {
+        let date_time1 = NaiveDate::from_ymd_opt(2023, 1, 1)
+            .unwrap()
+            .and_hms_opt(8, 0, 0)
+            .unwrap();
+        let date_time2 = NaiveDate::from_ymd_opt(2023, 1, 1)
+            .unwrap()
+            .and_hms_opt(10, 0, 0)
+            .unwrap();
+        let date_time3 = NaiveDate::from_ymd_opt(2023, 1, 2)
+            .unwrap()
+            .and_hms_opt(8, 0, 0)
+            .unwrap();
+
+        let events = baby_events(date_time1, date_time2, date_time3, date_time3);
+
+        let result = calculate_daily_poopy_diapers(events);
+
+        assert_eq!(result.len(), 2);
+        assert_eq!(result[0], (date_time1.date(), 1));
+        assert_eq!(result[1], (date_time3.date(), 1));
+    }
+
+    /// Test to ensure weekly poopy diapers are calculated correctly.
+    #[test]
+    fn test_calculate_weekly_poopy_diapers() {
+        let monday = NaiveDate::from_ymd_opt(2023, 9, 4).unwrap();
+        let tuesday = NaiveDate::from_ymd_opt(2023, 9, 5).unwrap();
+        let wednesday = NaiveDate::from_ymd_opt(2023, 9, 6).unwrap();
+        let next_monday = NaiveDate::from_ymd_opt(2023, 9, 11).unwrap();
+
+        let daily_volumes = vec![(monday, 1), (tuesday, 2), (wednesday, 3), (next_monday, 4)];
+
+        let result = calculate_weekly_poopy_diapers(daily_volumes);
+
+        assert_eq!(result.len(), 2); // Expecting 2 consolidated weeks
+        assert_eq!(result[0], (monday, 6)); // 6 is the total for the first week (monday + tuesday + wednesday)
+        assert_eq!(result[1], (next_monday, 4)); // 4 for the next week
     }
 }
