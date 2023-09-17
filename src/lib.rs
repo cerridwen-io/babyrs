@@ -9,7 +9,7 @@ use dotenvy::dotenv;
 use lazy_static::lazy_static;
 use log::{debug, info};
 use models::{BabyEvent, NewBabyEvent};
-use std::{env, error::Error, fs::File};
+use std::{collections::HashMap, env, error::Error, fs::File};
 
 pub mod models;
 pub mod schema;
@@ -459,6 +459,56 @@ pub fn calculate_weekly_poopy_diapers(
     weekly_poopy_diapers
 }
 
+/// Calculate average time (minutes) between feedings for each day.
+///
+/// # Arguments
+///
+/// - `events`: A vector of BabyEvent objects.
+///
+/// # Returns
+///
+/// A vector of tuples containing the date and average time between feedings (minutes).
+pub fn calculate_daily_average_time_between_feedings(
+    events: Vec<BabyEvent>,
+) -> Vec<(NaiveDate, i32)> {
+    // Filter out non-feeding events and sort by date
+    let mut feedings: Vec<&BabyEvent> = events
+        .iter()
+        .filter(|e| e.breastfeed > 0 || e.breastmilk > 0 || e.formula > 0)
+        .collect();
+    feedings.sort_by_key(|e| e.dt);
+
+    // Group feedings by date
+    let mut grouped_feedings: HashMap<NaiveDate, Vec<&BabyEvent>> = HashMap::new();
+    for feeding in feedings {
+        let date = feeding.dt.date();
+        grouped_feedings.entry(date).or_default().push(feeding);
+    }
+
+    // Calculate average time between feedings for each day
+    let mut daily_average_time_between_feedings: Vec<(NaiveDate, i32)> = Vec::new();
+
+    for (date, daily_feedings) in grouped_feedings {
+        let mut total_time = 0;
+        let mut count = 0;
+
+        for windows in daily_feedings.windows(2) {
+            if let [start, end] = windows {
+                total_time += (end.dt - start.dt).num_minutes();
+                count += 1;
+            }
+        }
+
+        // Calculate average time between feedings for the day
+        if count > 0 {
+            daily_average_time_between_feedings.push((date, (total_time / count) as i32));
+        }
+    }
+
+    daily_average_time_between_feedings.sort_by_key(|(d, _)| *d);
+    daily_average_time_between_feedings
+}
+
 #[cfg(test)]
 mod tests {
     use chrono::NaiveDateTime;
@@ -784,5 +834,53 @@ mod tests {
         assert_eq!(result.len(), 2); // Expecting 2 consolidated weeks
         assert_eq!(result[0], (monday, 6)); // 6 is the total for the first week (monday + tuesday + wednesday)
         assert_eq!(result[1], (next_monday, 4)); // 4 for the next week
+    }
+
+    /// Test to ensure daily average time between feedings is calculated correctly.
+    #[test]
+    fn test_calculate_daily_average_time_between_feedings() {
+        let date_time1 = NaiveDate::from_ymd_opt(2023, 1, 1)
+            .unwrap()
+            .and_hms_opt(8, 0, 0)
+            .unwrap();
+        let date_time2 = NaiveDate::from_ymd_opt(2023, 1, 1)
+            .unwrap()
+            .and_hms_opt(10, 0, 0)
+            .unwrap();
+        let date_time3 = NaiveDate::from_ymd_opt(2023, 1, 1)
+            .unwrap()
+            .and_hms_opt(12, 0, 0)
+            .unwrap();
+        let date_time4 = NaiveDate::from_ymd_opt(2023, 1, 1)
+            .unwrap()
+            .and_hms_opt(14, 0, 0)
+            .unwrap();
+        let date_time5 = NaiveDate::from_ymd_opt(2023, 1, 1)
+            .unwrap()
+            .and_hms_opt(14, 15, 0)
+            .unwrap();
+        let date_time6 = NaiveDate::from_ymd_opt(2023, 1, 3)
+            .unwrap()
+            .and_hms_opt(8, 30, 0)
+            .unwrap();
+        let date_time7 = NaiveDate::from_ymd_opt(2023, 1, 3)
+            .unwrap()
+            .and_hms_opt(5, 0, 0)
+            .unwrap();
+        let date_time8 = NaiveDate::from_ymd_opt(2023, 1, 4)
+            .unwrap()
+            .and_hms_opt(5, 30, 0)
+            .unwrap();
+
+        let events_1: Vec<BabyEvent> = baby_events(date_time1, date_time2, date_time3, date_time4);
+        let events_2: Vec<BabyEvent> = baby_events(date_time5, date_time6, date_time7, date_time8);
+
+        let events: Vec<BabyEvent> = events_1.into_iter().chain(events_2.into_iter()).collect();
+
+        let result = calculate_daily_average_time_between_feedings(events);
+
+        assert_eq!(result.len(), 2); // Expecting 2 consolidated days, no average for 2023-01-04
+        assert_eq!(result[0], (date_time1.date(), 93)); // between 0800 and 1415
+        assert_eq!(result[1], (date_time6.date(), 210)); // between 0500 and 0830
     }
 }
