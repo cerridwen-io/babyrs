@@ -32,7 +32,14 @@ impl App {
     /// A new `App` instance.
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
-        let actions = vec![Action::Quit].into();
+        let actions = vec![
+            Action::AddEvent,
+            Action::DeleteEvent,
+            Action::UpdateEvent,
+            Action::LoadCSV,
+            Action::Quit,
+        ]
+        .into();
         let state = AppState::default();
 
         Self { actions, state }
@@ -119,8 +126,8 @@ impl Action {
     /// A slice of [`Key`] associated with the action.
     pub fn keys(&self) -> &[Key] {
         match self {
-            Action::Quit => &[Key::Ctrl('c'), Key::Char('q')],
             Action::AddEvent => &[Key::Char('a')],
+            Action::Quit => &[Key::Char('q'), Key::Ctrl('c')],
             Action::DeleteEvent => &[Key::Char('d')],
             Action::UpdateEvent => &[Key::Char('u')],
             Action::LoadCSV => &[Key::Char('l')],
@@ -132,11 +139,11 @@ impl Display for Action {
     /// Formats the `Action` for display purposes.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str = match self {
-            Action::Quit => "Quit",
-            Action::AddEvent => "Add Event",
-            Action::DeleteEvent => "Delete Event",
-            Action::UpdateEvent => "Update Event",
-            Action::LoadCSV => "Load CSV",
+            Action::Quit => "quit",
+            Action::AddEvent => "add event",
+            Action::DeleteEvent => "delete event",
+            Action::UpdateEvent => "update event",
+            Action::LoadCSV => "load csv",
         };
         write!(f, "{}", str)
     }
