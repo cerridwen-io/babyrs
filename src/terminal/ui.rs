@@ -35,8 +35,8 @@ where
         .split(size);
 
     // Title and menu
-    let title = draw_title(app.actions());
-    rect.render_widget(title, chunks[0]);
+    let title_and_menu = draw_title_and_menu(app.actions());
+    rect.render_widget(title_and_menu, chunks[0]);
 
     let body = draw_body(false, app.state());
     rect.render_widget(body, chunks[1]);
@@ -47,21 +47,21 @@ where
 /// # Returns
 ///
 /// Returns a `Table` widget configured to display the title and application menu.
-fn draw_title<'a>(actions: &Actions) -> Table<'a> {
-    let key_style = Style::default().fg(Color::Yellow);
-    let menu_style = Style::default().fg(Color::White);
+fn draw_title_and_menu<'a>(actions: &Actions) -> Table<'a> {
     let mut menu_items = vec![];
 
     for action in actions.actions().iter() {
         menu_items.push(Cell::from(Line::from(vec![
-            Span::styled(format!("<{}> ", action.keys()[0]), key_style),
-            Span::styled(action.to_string(), menu_style),
+            Span::styled(
+                format!("<{}> ", action.keys()[0]),
+                Style::default().fg(Color::Yellow),
+            ),
+            Span::styled(action.to_string(), Style::default().fg(Color::White)),
         ])));
     }
 
-    let rows = vec![Row::new(menu_items)];
-
-    Table::new(rows)
+    // A single row with the menu items
+    Table::new(vec![Row::new(menu_items)])
         .block(
             Block::default()
                 .borders(Borders::ALL)
@@ -70,11 +70,11 @@ fn draw_title<'a>(actions: &Actions) -> Table<'a> {
                 .title_style(Style::new().blue().bold()),
         )
         .widths(&[
-            Constraint::Min(20),
-            Constraint::Min(20),
-            Constraint::Min(20),
-            Constraint::Min(20),
-            Constraint::Min(20),
+            Constraint::Min(15),
+            Constraint::Min(18),
+            Constraint::Min(18),
+            Constraint::Min(14),
+            Constraint::Min(10),
         ])
         .column_spacing(1)
 }

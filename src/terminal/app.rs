@@ -32,6 +32,7 @@ impl App {
     /// A new `App` instance.
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
+        // This is the order of the actions displayed in the menu
         let actions = vec![
             Action::AddEvent,
             Action::DeleteEvent,
@@ -59,11 +60,11 @@ impl App {
             debug!("Action: {:?}", action);
 
             match action {
-                Action::Quit => AppReturn::Exit,
                 Action::AddEvent => AppReturn::Continue,
                 Action::DeleteEvent => AppReturn::Continue,
-                Action::UpdateEvent => AppReturn::Continue,
                 Action::LoadCSV => AppReturn::Continue,
+                Action::UpdateEvent => AppReturn::Continue,
+                Action::Quit => AppReturn::Exit,
             }
         } else {
             warn!("No action found for key: {:?}", key);
@@ -95,11 +96,11 @@ impl App {
 /// Enum representing possible actions within the application.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Action {
-    Quit,
     AddEvent,
     DeleteEvent,
-    UpdateEvent,
     LoadCSV,
+    UpdateEvent,
+    Quit,
 }
 
 impl Action {
@@ -110,11 +111,11 @@ impl Action {
     /// An iterator over [`Action`].
     pub fn iterator() -> Iter<'static, Action> {
         static ACTIONS: [Action; 5] = [
-            Action::Quit,
             Action::AddEvent,
             Action::DeleteEvent,
-            Action::UpdateEvent,
             Action::LoadCSV,
+            Action::UpdateEvent,
+            Action::Quit,
         ];
         ACTIONS.iter()
     }
@@ -127,10 +128,10 @@ impl Action {
     pub fn keys(&self) -> &[Key] {
         match self {
             Action::AddEvent => &[Key::Char('a')],
-            Action::Quit => &[Key::Char('q'), Key::Ctrl('c')],
             Action::DeleteEvent => &[Key::Char('d')],
-            Action::UpdateEvent => &[Key::Char('u')],
             Action::LoadCSV => &[Key::Char('l')],
+            Action::UpdateEvent => &[Key::Char('u')],
+            Action::Quit => &[Key::Char('q'), Key::Ctrl('c')],
         }
     }
 }
@@ -139,11 +140,11 @@ impl Display for Action {
     /// Formats the `Action` for display purposes.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str = match self {
-            Action::Quit => "quit",
             Action::AddEvent => "add event",
             Action::DeleteEvent => "delete event",
-            Action::UpdateEvent => "update event",
             Action::LoadCSV => "load csv",
+            Action::UpdateEvent => "update event",
+            Action::Quit => "quit",
         };
         write!(f, "{}", str)
     }
