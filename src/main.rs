@@ -1,20 +1,23 @@
 pub mod terminal;
 
+use diesel::prelude::*;
 use log::info;
 
 use crate::terminal::app::App;
+use babyrs::{establish_connection, process_csv};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Welcome to babyrs!");
 
-    // Establish connection to database
-    // let connection: &mut SqliteConnection = &mut establish_connection();
     let app = App::new();
     terminal::start_ui(app)?;
 
     // Process CSV file
-    // process_csv(connection, "sample/example.csv").expect("Error processing CSV");
-    // let events = read_events(connection);
+    info!("Loading events from CSV into the database...");
+
+    // Establish connection to database
+    let connection: &mut SqliteConnection = &mut establish_connection();
+    process_csv(connection, "sample/example.csv").expect("Error processing CSV");
 
     Ok(())
 }

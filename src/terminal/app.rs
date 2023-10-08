@@ -25,7 +25,7 @@ pub struct App {
 impl App {
     /// Constructs a new `App`.
     ///
-    /// Initializes the app with default actions and state.
+    /// Initializes the app with default actions/state.
     ///
     /// # Returns
     ///
@@ -72,6 +72,26 @@ impl App {
         }
     }
 
+    /// Initializes the application.
+    ///
+    /// # Returns
+    ///
+    /// An `AppReturn` indicating that the application should continue running.
+    pub fn initialize(&mut self) -> AppReturn {
+        self.state = AppState::initialized();
+        AppReturn::Continue
+    }
+
+    /// Loads the events from the database into the state.
+    ///
+    /// # Returns
+    ///
+    /// An `AppReturn` indicating that the application should continue running.
+    pub fn load_events(&mut self) -> AppReturn {
+        self.state.load_events();
+        AppReturn::Continue
+    }
+
     /// Updates the tick state.
     ///
     /// # Returns
@@ -90,6 +110,21 @@ impl App {
     /// Returns a reference to the application's state.
     pub fn state(&self) -> &AppState {
         &self.state
+    }
+
+    /// Adds an event to the application.
+    pub fn add_event(&mut self) {
+        unimplemented!()
+    }
+
+    /// Deletes an event from the application.
+    pub fn delete_event(&mut self) {
+        unimplemented!()
+    }
+
+    /// Loads events from a CSV file.
+    pub fn load_csv(&mut self) {
+        unimplemented!()
     }
 }
 

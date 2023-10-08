@@ -2,7 +2,7 @@ use std::vec;
 
 use ratatui::{
     prelude::*,
-    widgets::{Block, BorderType, Borders, Cell, Paragraph, Row, Table},
+    widgets::{Block, BorderType, Borders, Cell, List, ListItem, Paragraph, Row, Table},
     Frame,
 };
 
@@ -29,17 +29,28 @@ where
     check_size(&size);
 
     // Vertical layout
-    let chunks = Layout::default()
+    let vertical_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
         .split(size);
 
     // Title and menu
     let title_and_menu = draw_title_and_menu(app.actions());
-    rect.render_widget(title_and_menu, chunks[0]);
+    rect.render_widget(title_and_menu, vertical_chunks[0]);
 
-    let body = draw_body(false, app.state());
-    rect.render_widget(body, chunks[1]);
+    // Horizontal layout for body
+    let horizontal_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
+        .split(vertical_chunks[1]);
+
+    // Event list
+    let event_list = draw_event_list(app.state());
+    rect.render_widget(event_list, horizontal_chunks[0]);
+
+    // Details
+    let details = draw_details(app.state());
+    rect.render_widget(details, horizontal_chunks[1]);
 }
 
 /// Creates a `Table` widget for the title and menu.
@@ -79,35 +90,63 @@ fn draw_title_and_menu<'a>(actions: &Actions) -> Table<'a> {
         .column_spacing(1)
 }
 
-/// Creates a `Paragraph` widget for the body of the UI.
+/// Creates a `List` widget containing baby_event datetime values.
 ///
 /// # Arguments
 ///
-/// - `loading`: Indicates if the body should show a loading state.
-/// - `state`: Current `AppState` to display the tick count.
+/// - `state`: Current `AppState` to display baby_events.
 ///
 /// # Returns
 ///
-/// Returns a `Paragraph` widget configured to display the body content.
-fn draw_body<'a>(loading: bool, state: &AppState) -> Paragraph<'a> {
-    let loading_text = if loading { "Loading..." } else { "" };
-    let tick_text = if let Some(ticks) = state.count_tick() {
-        format!("Ticks: {}", ticks)
-    } else {
-        String::default()
+/// Returns a `List` widget configured to display the body content.
+fn draw_event_list<'a>(state: &AppState) -> List<'a> {
+    let mut items = vec![];
+
+    for baby_event in state.get_events().unwrap().iter() {
+        items.push(ListItem::new(format!("{}", baby_event.dt)));
+    }
+
+    assert_eq!(12, items.len());
+
+    List::new(items)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Plain)
+                .title("Events")
+                .title_style(Style::new().blue().bold()),
+        )
+        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+        .highlight_symbol(">> ")
+        .start_corner(Corner::TopLeft)
+        .style(Style::default().fg(Color::White))
+}
+
+/// Creates a `Paragraph` widget containing AppState baby_event details.
+///
+/// # Arguments
+///
+/// - `state`: Current `AppState` to display details.
+///
+/// # Returns
+///
+/// Returns a `Paragraph` widget configured to display the details.
+fn draw_details<'a>(state: &AppState) -> Paragraph<'a> {
+    let text = match state {
+        AppState::Init => "Welcome to babyrs! Press <q> to quit.",
+        AppState::Initialized { .. } => "DETAILS",
     };
 
-    Paragraph::new(vec![
-        Line::from(Span::raw(loading_text)),
-        Line::from(Span::raw(tick_text)),
-    ])
-    .style(Style::default().fg(Color::White))
-    .alignment(Alignment::Left)
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Plain),
-    )
+    Paragraph::new(text)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Plain)
+                .title("Details")
+                .title_style(Style::new().blue().bold()),
+        )
+        .style(Style::default().fg(Color::White))
+        .alignment(Alignment::Left)
 }
 
 /// Validates the terminal size to ensure it meets minimum requirements.

@@ -77,6 +77,12 @@ fn run_app<B: Backend>(
     let tick_rate = Duration::from_millis(200);
     let events = Events::new(tick_rate);
 
+    // Initialize the app
+    app.initialize();
+
+    // Load events from the database
+    app.load_events();
+
     // Main event loop
     loop {
         // Draw the user interface
