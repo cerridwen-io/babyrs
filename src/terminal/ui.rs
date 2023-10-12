@@ -1,10 +1,11 @@
-use std::vec;
-
+use chrono::{Datelike, NaiveDateTime};
 use ratatui::{
     prelude::*,
-    widgets::{Block, BorderType, Borders, Cell, List, ListItem, Paragraph, Row, Table},
+    widgets::{calendar::*, *},
     Frame,
 };
+use std::vec;
+use time::{Date, Month, OffsetDateTime};
 
 use crate::terminal::app::{Actions, App};
 use crate::terminal::state::AppState;
@@ -41,12 +42,22 @@ where
     // Horizontal layout for body
     let horizontal_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
+        .constraints([Constraint::Percentage(25), Constraint::Percentage(75)].as_ref())
         .split(vertical_chunks[1]);
+
+    // Vertical layout for calendar and events
+    let side_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(30), Constraint::Percentage(70)].as_ref())
+        .split(horizontal_chunks[0]);
+
+    // Calendar
+    let calendar = draw_calendar(app.state());
+    rect.render_widget(calendar, side_chunks[0]);
 
     // Event list
     let event_list = draw_event_list(app.state());
-    rect.render_widget(event_list, horizontal_chunks[0]);
+    rect.render_widget(event_list, side_chunks[1]);
 
     // Details
     let details = draw_details(app.state());
@@ -88,6 +99,35 @@ fn draw_title_and_menu<'a>(actions: &Actions) -> Table<'a> {
             Constraint::Min(10),
         ])
         .column_spacing(1)
+}
+
+/// Creates a `Calendar` widget.
+///
+/// # Arguments
+///
+/// - `state`: Current `AppState` to display calendar.
+///
+/// # Returns
+///
+/// Returns a `Calendar` widget configured to display the calendar.
+fn draw_calendar<'a>(
+    state: &AppState,
+) -> Monthly<'a, ratatui::widgets::calendar::CalendarEventStore> {
+    // let date = OffsetDateTime::now_local().unwrap().date();
+    let events = state.get_events().unwrap();
+    let event_dates: Vec<NaiveDateTime> = events.iter().map(|e| e.dt).collect();
+    let mut calendar_dates: CalendarEventStore = CalendarEventStore::default();
+
+    for date in event_dates {
+        calendar_dates.add(convert_to_date(date), Style::new().fg(Color::Yellow));
+    }
+
+    // today() uses OffsetDateTime::now_local() to get the current date and errors with indeterminate offset
+    // todo: figure out a way to create a CalendarEventStore without using today()
+    Monthly::new(OffsetDateTime::now_utc().date(), calendar_dates)
+        .block(Block::new().padding(Padding::new(2, 0, 1, 1)))
+        .show_month_header(Style::new().bold())
+        .show_weekdays_header(Style::new().italic())
 }
 
 /// Creates a `List` widget containing baby_event datetime values.
@@ -159,17 +199,35 @@ fn draw_details<'a>(state: &AppState) -> Paragraph<'a> {
 ///
 /// This function will panic if the terminal size is too small.
 fn check_size(rect: &Rect) {
-    if rect.width < 52 {
+    if rect.width < 80 {
         panic!(
             "Terminal width too small, got {}; Please resize to at least 52 columns.",
             rect.width
         );
     }
 
-    if rect.height < 28 {
+    if rect.height < 24 {
         panic!(
             "Terminal height too small, got {}; Please resize to at least 28 rows.",
             rect.height
         );
     }
+}
+
+/// Convert NaiveDateTime to time::Date
+///
+/// # Arguments
+///
+/// - `dt`: NaiveDateTime to convert
+///
+/// # Returns
+///
+/// Returns a time::Date
+fn convert_to_date(dt: NaiveDateTime) -> Date {
+    Date::from_calendar_date(
+        dt.year(),
+        Month::try_from(dt.month() as u8).unwrap(),
+        dt.day() as u8,
+    )
+    .unwrap()
 }
