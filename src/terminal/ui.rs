@@ -42,13 +42,19 @@ where
     // Horizontal layout for body
     let horizontal_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(25), Constraint::Percentage(75)].as_ref())
+        .constraints([Constraint::Min(24), Constraint::Min(size.width - 24)].as_ref())
         .split(vertical_chunks[1]);
 
     // Vertical layout for calendar and events
     let side_chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([Constraint::Percentage(30), Constraint::Percentage(70)].as_ref())
+        .constraints(
+            [
+                Constraint::Min(9),
+                Constraint::Min(vertical_chunks[1].height - 9),
+            ]
+            .as_ref(),
+        )
         .split(horizontal_chunks[0]);
 
     // Calendar
@@ -125,7 +131,7 @@ fn draw_calendar<'a>(
     // today() uses OffsetDateTime::now_local() to get the current date and errors with indeterminate offset
     // todo: figure out a way to create a CalendarEventStore without using today()
     Monthly::new(OffsetDateTime::now_utc().date(), calendar_dates)
-        .block(Block::new().padding(Padding::new(2, 0, 1, 1)))
+        .block(Block::new().padding(Padding::new(1, 1, 1, 1)))
         .show_month_header(Style::new().bold())
         .show_weekdays_header(Style::new().italic())
 }
