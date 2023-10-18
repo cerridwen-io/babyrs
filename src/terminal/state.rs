@@ -6,6 +6,7 @@ use std::fmt::{self, Display};
 /// Represents the filter for the event list.
 ///
 /// The filter can be `Day`, `Week`, or `Month`.
+#[derive(Debug, PartialEq)]
 pub enum Filter {
     Day,
     Week,
@@ -56,7 +57,6 @@ pub enum AppState {
     Init,
     /// State of the application when it is running and has data.
     Initialized {
-        counter_tick: u64,
         /// The events that have been added to the application.
         baby_events: Vec<BabyEvent>,
         /// The filter for the event list.
@@ -69,14 +69,12 @@ impl AppState {
     ///
     /// # Returns
     ///
-    /// An `AppState::Initialized` variant with `counter_tick` set to 0 and an empty vector of events.
+    /// An `AppState::Initialized` variant with an empty vector of events and the default filter.
     pub fn initialized() -> Self {
-        let counter_tick = 0;
         let baby_events = vec![];
         let filter = Filter::default();
 
         Self::Initialized {
-            counter_tick,
             baby_events,
             filter,
         }
@@ -144,29 +142,6 @@ impl AppState {
             *filter = filter.next();
         }
     }
-
-    /// Increments the `counter_tick` field by 1 if the state is `Initialized`.
-    ///
-    /// Does nothing if the state is not `Initialized`.
-    pub fn increment_tick(&mut self) {
-        if let Self::Initialized { counter_tick, .. } = self {
-            *counter_tick += 1;
-        }
-    }
-
-    /// Returns the current value of `counter_tick` if the state is `Initialized`.
-    ///
-    /// # Returns
-    ///
-    /// - `Some(u64)` containing the tick count if the state is `Initialized`.
-    /// - `None` otherwise.
-    pub fn count_tick(&self) -> Option<u64> {
-        if let Self::Initialized { counter_tick, .. } = self {
-            Some(*counter_tick)
-        } else {
-            None
-        }
-    }
 }
 
 /// Implements the `Default` trait for `AppState`.
@@ -187,28 +162,8 @@ mod tests {
         let state = AppState::initialized();
 
         assert!(state.is_initialized());
-        assert_eq!(state.count_tick(), Some(0));
         assert!(state.get_events().unwrap().is_empty());
-    }
-
-    #[test]
-    fn test_increment_tick() {
-        let mut state = AppState::initialized();
-
-        assert_eq!(state.count_tick(), Some(0));
-
-        state.increment_tick();
-        assert_eq!(state.count_tick(), Some(1));
-
-        state.increment_tick();
-        assert_eq!(state.count_tick(), Some(2));
-    }
-
-    #[test]
-    fn test_count_tick_not_initialized() {
-        let state = AppState::default();
-
-        assert_eq!(state.count_tick(), None);
+        assert_eq!(state.get_filter().unwrap(), &Filter::Day);
     }
 
     #[test]
@@ -223,5 +178,49 @@ mod tests {
         let mut state = AppState::default();
 
         state.load_events();
+    }
+
+    #[test]
+    fn test_get_filter_not_initialized() {
+        let state = AppState::default();
+
+        assert!(state.get_filter().is_none());
+    }
+
+    #[test]
+    fn test_update_filter_not_initialized() {
+        let mut state = AppState::default();
+
+        assert_eq!(state.update_filter(), ());
+    }
+
+    #[test]
+    fn test_update_filter() {
+        let mut state = AppState::initialized();
+
+        assert_eq!(state.get_filter().unwrap(), &Filter::Day);
+
+        state.update_filter();
+        assert_eq!(state.get_filter().unwrap(), &Filter::Week);
+
+        state.update_filter();
+        assert_eq!(state.get_filter().unwrap(), &Filter::Month);
+
+        state.update_filter();
+        assert_eq!(state.get_filter().unwrap(), &Filter::Day);
+    }
+
+    #[test]
+    fn test_next_filter() {
+        assert_eq!(Filter::Day.next(), Filter::Week);
+        assert_eq!(Filter::Week.next(), Filter::Month);
+        assert_eq!(Filter::Month.next(), Filter::Day);
+    }
+
+    #[test]
+    fn test_display_filter() {
+        assert_eq!(format!("{}", Filter::Day), "Day");
+        assert_eq!(format!("{}", Filter::Week), "Week");
+        assert_eq!(format!("{}", Filter::Month), "Month");
     }
 }

@@ -78,7 +78,7 @@ pub enum Key {
     Ctrl(char),
     /// An Alt+<key> combination.
     Alt(char),
-    /// An unknown key combination.
+    /// An unknown or null key combination.
     Unknown,
 }
 

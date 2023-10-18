@@ -9,6 +9,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use events::Key;
 use events::{Events, InputEvent};
 use ratatui::prelude::*;
 use std::time::Duration;
@@ -91,7 +92,7 @@ fn run_app<B: Backend>(
         // Handle input events
         let result = match events.next()? {
             InputEvent::Input(key) => app.do_action(key),
-            InputEvent::Tick => app.update_tick(),
+            InputEvent::Tick => app.do_action(Key::Unknown),
         };
 
         // Exit if the app returns an exit code

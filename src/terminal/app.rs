@@ -94,16 +94,6 @@ impl App {
         AppReturn::Continue
     }
 
-    /// Updates the tick state.
-    ///
-    /// # Returns
-    ///
-    /// An `AppReturn` indicating that the application should continue running.
-    pub fn update_tick(&mut self) -> AppReturn {
-        self.state.increment_tick();
-        AppReturn::Continue
-    }
-
     /// Returns a reference to the application's actions.
     pub fn actions(&self) -> &Actions {
         &self.actions
