@@ -36,6 +36,7 @@ impl App {
         let actions = vec![
             Action::AddEvent,
             Action::DeleteEvent,
+            Action::Filter,
             Action::UpdateEvent,
             Action::LoadCSV,
             Action::Quit,
@@ -62,6 +63,7 @@ impl App {
             match action {
                 Action::AddEvent => AppReturn::Continue,
                 Action::DeleteEvent => AppReturn::Continue,
+                Action::Filter => self.filter(),
                 Action::LoadCSV => AppReturn::Continue,
                 Action::UpdateEvent => AppReturn::Continue,
                 Action::Quit => AppReturn::Exit,
@@ -122,6 +124,19 @@ impl App {
         unimplemented!()
     }
 
+    /// Switches to the next filter.
+    ///
+    /// The order of filters is: day, week, month.
+    /// If the current filter is month, it will wrap around to day.
+    ///
+    /// # Returns
+    ///
+    /// An `AppReturn` indicating that the application should continue running.
+    pub fn filter(&mut self) -> AppReturn {
+        self.state.update_filter();
+        AppReturn::Continue
+    }
+
     /// Loads events from a CSV file.
     pub fn load_csv(&mut self) {
         unimplemented!()
@@ -133,6 +148,7 @@ impl App {
 pub enum Action {
     AddEvent,
     DeleteEvent,
+    Filter,
     LoadCSV,
     UpdateEvent,
     Quit,
@@ -145,9 +161,10 @@ impl Action {
     ///
     /// An iterator over [`Action`].
     pub fn iterator() -> Iter<'static, Action> {
-        static ACTIONS: [Action; 5] = [
+        static ACTIONS: [Action; 6] = [
             Action::AddEvent,
             Action::DeleteEvent,
+            Action::Filter,
             Action::LoadCSV,
             Action::UpdateEvent,
             Action::Quit,
@@ -164,6 +181,7 @@ impl Action {
         match self {
             Action::AddEvent => &[Key::Char('a')],
             Action::DeleteEvent => &[Key::Char('d')],
+            Action::Filter => &[Key::Char('f')],
             Action::LoadCSV => &[Key::Char('l')],
             Action::UpdateEvent => &[Key::Char('u')],
             Action::Quit => &[Key::Char('q'), Key::Ctrl('c')],
@@ -177,6 +195,7 @@ impl Display for Action {
         let str = match self {
             Action::AddEvent => "add event",
             Action::DeleteEvent => "delete event",
+            Action::Filter => "filter day/week/month",
             Action::LoadCSV => "load csv",
             Action::UpdateEvent => "update event",
             Action::Quit => "quit",

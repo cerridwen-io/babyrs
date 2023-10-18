@@ -1,6 +1,51 @@
 use babyrs::{establish_connection, models::BabyEvent, read_events};
 use diesel::sqlite::SqliteConnection;
 use log::info;
+use std::fmt::{self, Display};
+
+/// Represents the filter for the event list.
+///
+/// The filter can be `Day`, `Week`, or `Month`.
+pub enum Filter {
+    Day,
+    Week,
+    Month,
+}
+
+impl Filter {
+    /// Returns the next filter in the sequence.
+    ///
+    /// # Parameters
+    ///
+    /// * `self`: The current filter.
+    ///
+    /// # Returns
+    ///
+    /// The next filter in the sequence.
+    pub fn next(&self) -> Self {
+        match self {
+            Self::Day => Self::Week,
+            Self::Week => Self::Month,
+            Self::Month => Self::Day,
+        }
+    }
+}
+
+impl Default for Filter {
+    fn default() -> Self {
+        Self::Day
+    }
+}
+
+impl Display for Filter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Day => write!(f, "Day"),
+            Self::Week => write!(f, "Week"),
+            Self::Month => write!(f, "Month"),
+        }
+    }
+}
 
 /// Represents the application state.
 ///
@@ -14,6 +59,8 @@ pub enum AppState {
         counter_tick: u64,
         /// The events that have been added to the application.
         baby_events: Vec<BabyEvent>,
+        /// The filter for the event list.
+        filter: Filter,
     },
 }
 
@@ -26,10 +73,12 @@ impl AppState {
     pub fn initialized() -> Self {
         let counter_tick = 0;
         let baby_events = vec![];
+        let filter = Filter::default();
 
         Self::Initialized {
             counter_tick,
             baby_events,
+            filter,
         }
     }
 
@@ -67,6 +116,32 @@ impl AppState {
             Some(baby_events)
         } else {
             None
+        }
+    }
+
+    /// Returns the current value of `filter` if the state is `Initialized`.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(Filter)` containing the filter if the state is `Initialized`.
+    /// - `None` otherwise.
+    pub fn get_filter(&self) -> Option<&Filter> {
+        if let Self::Initialized { filter, .. } = self {
+            Some(filter)
+        } else {
+            None
+        }
+    }
+
+    /// Updates the filter to the next value in the sequence.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(Filter)` containing the filter if the state is `Initialized`.
+    /// - `None` otherwise.
+    pub fn update_filter(&mut self) {
+        if let Self::Initialized { filter, .. } = self {
+            *filter = filter.next();
         }
     }
 

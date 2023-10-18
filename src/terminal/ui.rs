@@ -94,12 +94,13 @@ fn draw_title_and_menu<'a>(actions: &Actions) -> Table<'a> {
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Plain)
-                .title("Babyrs")
+                .title(" Babyrs ")
                 .title_style(Style::new().blue().bold()),
         )
         .widths(&[
             Constraint::Min(15),
             Constraint::Min(18),
+            Constraint::Min(27),
             Constraint::Min(18),
             Constraint::Min(14),
             Constraint::Min(10),
@@ -159,7 +160,7 @@ fn draw_event_list<'a>(state: &AppState) -> List<'a> {
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Plain)
-                .title("Events")
+                .title(" Events ")
                 .title_style(Style::new().blue().bold()),
         )
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
@@ -188,7 +189,7 @@ fn draw_details<'a>(state: &AppState) -> Paragraph<'a> {
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Plain)
-                .title("Details")
+                .title(format!(" {} Details ", state.get_filter().unwrap()))
                 .title_style(Style::new().blue().bold()),
         )
         .style(Style::default().fg(Color::White))
