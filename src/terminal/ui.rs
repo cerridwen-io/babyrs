@@ -22,10 +22,7 @@ use crate::terminal::state::{AppState, Filter};
 /// # Type Parameters
 ///
 /// - `B`: Represents the backend, must implement `Backend` trait.
-pub fn draw_ui<B>(rect: &mut Frame<B>, app: &App)
-where
-    B: Backend,
-{
+pub fn draw_ui(rect: &mut Frame, app: &App) {
     let size = rect.size();
     check_size(&size);
 
