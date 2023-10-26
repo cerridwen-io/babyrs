@@ -8,7 +8,7 @@ use std::vec;
 use time::{Date, Month, OffsetDateTime};
 
 use crate::terminal::app::{Actions, App};
-use crate::terminal::state::AppState;
+use crate::terminal::state::{AppState, Filter};
 
 /// Renders the user interface.
 ///
@@ -147,13 +147,32 @@ fn draw_calendar<'a>(
 ///
 /// Returns a `List` widget configured to display the body content.
 fn draw_event_list<'a>(state: &AppState) -> List<'a> {
-    let mut items = vec![];
+    let filter = state.get_filter().unwrap();
 
-    for baby_event in state.get_events().unwrap().iter() {
-        items.push(ListItem::new(format!("{}", baby_event.dt)));
-    }
-
-    assert_eq!(12, items.len());
+    // filter events based on the current filter enum
+    let items = match filter {
+        Filter::Day(date) => state
+            .get_events()
+            .unwrap()
+            .iter()
+            .filter(|e| &e.dt.date() == date)
+            .map(|e| ListItem::new(format!("{}", e.dt)))
+            .collect::<Vec<ListItem>>(),
+        Filter::Week(week) => state
+            .get_events()
+            .unwrap()
+            .iter()
+            .filter(|e| &e.dt.date().iso_week() == week)
+            .map(|e| ListItem::new(format!("{}", e.dt)))
+            .collect::<Vec<ListItem>>(),
+        Filter::Month(month) => state
+            .get_events()
+            .unwrap()
+            .iter()
+            .filter(|e| e.dt.date().month() == month.month())
+            .map(|e| ListItem::new(format!("{}", e.dt)))
+            .collect::<Vec<ListItem>>(),
+    };
 
     List::new(items)
         .block(
@@ -163,7 +182,11 @@ fn draw_event_list<'a>(state: &AppState) -> List<'a> {
                 .title(" Events ")
                 .title_style(Style::new().blue().bold()),
         )
-        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+        .highlight_style(
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        )
         .highlight_symbol(">> ")
         .start_corner(Corner::TopLeft)
         .style(Style::default().fg(Color::White))

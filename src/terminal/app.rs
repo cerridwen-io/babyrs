@@ -36,7 +36,7 @@ impl App {
         let actions = vec![
             Action::AddEvent,
             Action::DeleteEvent,
-            Action::Filter,
+            Action::SwitchFilter,
             Action::UpdateEvent,
             Action::LoadCSV,
             Action::Quit,
@@ -63,7 +63,7 @@ impl App {
             match action {
                 Action::AddEvent => AppReturn::Continue,
                 Action::DeleteEvent => AppReturn::Continue,
-                Action::Filter => self.filter(),
+                Action::SwitchFilter => self.switch_filter(),
                 Action::LoadCSV => AppReturn::Continue,
                 Action::UpdateEvent => AppReturn::Continue,
                 Action::Quit => AppReturn::Exit,
@@ -122,8 +122,8 @@ impl App {
     /// # Returns
     ///
     /// An `AppReturn` indicating that the application should continue running.
-    pub fn filter(&mut self) -> AppReturn {
-        self.state.update_filter();
+    pub fn switch_filter(&mut self) -> AppReturn {
+        self.state.switch_filter();
         AppReturn::Continue
     }
 
@@ -138,7 +138,7 @@ impl App {
 pub enum Action {
     AddEvent,
     DeleteEvent,
-    Filter,
+    SwitchFilter,
     LoadCSV,
     UpdateEvent,
     Quit,
@@ -154,7 +154,7 @@ impl Action {
         static ACTIONS: [Action; 6] = [
             Action::AddEvent,
             Action::DeleteEvent,
-            Action::Filter,
+            Action::SwitchFilter,
             Action::LoadCSV,
             Action::UpdateEvent,
             Action::Quit,
@@ -171,7 +171,7 @@ impl Action {
         match self {
             Action::AddEvent => &[Key::Char('a')],
             Action::DeleteEvent => &[Key::Char('d')],
-            Action::Filter => &[Key::Char('f')],
+            Action::SwitchFilter => &[Key::Char('f')],
             Action::LoadCSV => &[Key::Char('l')],
             Action::UpdateEvent => &[Key::Char('u')],
             Action::Quit => &[Key::Char('q'), Key::Ctrl('c')],
@@ -185,7 +185,7 @@ impl Display for Action {
         let str = match self {
             Action::AddEvent => "add event",
             Action::DeleteEvent => "delete event",
-            Action::Filter => "filter day/week/month",
+            Action::SwitchFilter => "filter day/week/month",
             Action::LoadCSV => "load csv",
             Action::UpdateEvent => "update event",
             Action::Quit => "quit",

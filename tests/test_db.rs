@@ -231,7 +231,7 @@ fn test_process_csv() {
         .load::<BabyEvent>(connection)
         .expect("Error loading events");
 
-    assert_eq!(results.len(), 12);
+    assert_eq!(results.len(), 38);
 
     let saved_event = &results[0];
 

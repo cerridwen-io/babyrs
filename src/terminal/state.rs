@@ -1,20 +1,24 @@
 use babyrs::{establish_connection, models::BabyEvent, read_events};
+use chrono::{Datelike, IsoWeek, NaiveDate};
 use diesel::sqlite::SqliteConnection;
 use log::info;
-use std::fmt::{self, Display};
+use std::{
+    fmt::{self, Display},
+    vec,
+};
 
 /// Represents the filter for the event list.
 ///
 /// The filter can be `Day`, `Week`, or `Month`.
 #[derive(Debug, PartialEq)]
 pub enum Filter {
-    Day,
-    Week,
-    Month,
+    Day(NaiveDate),
+    Week(IsoWeek),
+    Month(NaiveDate),
 }
 
 impl Filter {
-    /// Returns the next filter in the sequence.
+    /// Switches to the next filter in the sequence.
     ///
     /// # Parameters
     ///
@@ -23,29 +27,54 @@ impl Filter {
     /// # Returns
     ///
     /// The next filter in the sequence.
-    pub fn next(&self) -> Self {
+    pub fn switch(&self) -> Self {
         match self {
-            Self::Day => Self::Week,
-            Self::Week => Self::Month,
-            Self::Month => Self::Day,
+            Self::Day(date) => Self::Week(date.iso_week()),
+            Self::Week(week) => Self::Month(iso_week_to_naive_date(*week).unwrap()),
+            Self::Month(month) => Self::Day(*month),
         }
     }
 }
 
 impl Default for Filter {
     fn default() -> Self {
-        Self::Day
+        Self::Day(NaiveDate::default())
     }
 }
 
 impl Display for Filter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Day => write!(f, "Day"),
-            Self::Week => write!(f, "Week"),
-            Self::Month => write!(f, "Month"),
+            Self::Day(_) => write!(f, "Day"),
+            Self::Week(_) => write!(f, "Week"),
+            Self::Month(_) => write!(f, "Month"),
         }
     }
+}
+
+/// Convert an `IsoWeek` to a month. in `NaiveDate` format. The month is set to the first day of the month.
+///
+/// # Parameters
+///
+/// * `week`: The `IsoWeek` to convert.
+///
+/// # Returns
+///
+/// The `NaiveDate` corresponding to the first day of the month.
+fn iso_week_to_naive_date(week: IsoWeek) -> Option<NaiveDate> {
+    let first_day_of_iso_year = NaiveDate::from_isoywd_opt(week.year(), 1, chrono::Weekday::Mon)?;
+    let january_1st_weekday = first_day_of_iso_year.weekday();
+
+    let days_to_add = match january_1st_weekday {
+        chrono::Weekday::Mon => (week.week() - 1) as i64 * 7,
+        _ => {
+            // Handle the case where January 1st is part of the first ISO week of the year.
+            let days_to_subtract = (7 - january_1st_weekday.num_days_from_monday()) as i64;
+            (week.week() - 2) as i64 * 7 - days_to_subtract
+        }
+    };
+
+    Some(first_day_of_iso_year + chrono::Duration::days(days_to_add))
 }
 
 /// Represents the application state.
@@ -61,6 +90,7 @@ pub enum AppState {
         baby_events: Vec<BabyEvent>,
         /// The filter for the event list.
         filter: Filter,
+        event_selection: Vec<BabyEvent>,
     },
 }
 
@@ -73,10 +103,12 @@ impl AppState {
     pub fn initialized() -> Self {
         let baby_events = vec![];
         let filter = Filter::default();
+        let event_selection: Vec<BabyEvent> = vec![];
 
         Self::Initialized {
             baby_events,
             filter,
+            event_selection,
         }
     }
 
@@ -94,12 +126,24 @@ impl AppState {
     ///
     /// Does nothing if the state is not `Initialized`.
     pub fn load_events(&mut self) {
-        if let Self::Initialized { baby_events, .. } = self {
+        if let Self::Initialized {
+            baby_events,
+            event_selection,
+            filter,
+            ..
+        } = self
+        {
             info!("Loading events from database...");
 
             // Establish connection to database
             let connection: &mut SqliteConnection = &mut establish_connection();
             *baby_events = read_events(connection);
+
+            // update the day/week/month selection to the latest event
+            *event_selection = vec![*baby_events.last().unwrap()];
+
+            // set the filter to the latest event
+            *filter = Filter::Day(baby_events.last().unwrap().dt.date());
         }
     }
 
@@ -131,15 +175,15 @@ impl AppState {
         }
     }
 
-    /// Updates the filter to the next value in the sequence.
+    /// Switches the filter to the next filter in the sequence.
     ///
     /// # Returns
     ///
     /// - `Some(Filter)` containing the filter if the state is `Initialized`.
     /// - `None` otherwise.
-    pub fn update_filter(&mut self) {
+    pub fn switch_filter(&mut self) {
         if let Self::Initialized { filter, .. } = self {
-            *filter = filter.next();
+            *filter = filter.switch();
         }
     }
 }
@@ -163,7 +207,10 @@ mod tests {
 
         assert!(state.is_initialized());
         assert!(state.get_events().unwrap().is_empty());
-        assert_eq!(state.get_filter().unwrap(), &Filter::Day);
+        assert_eq!(
+            state.get_filter().unwrap(),
+            &Filter::Day(NaiveDate::default())
+        );
     }
 
     #[test]
@@ -191,36 +238,71 @@ mod tests {
     fn test_update_filter_not_initialized() {
         let mut state = AppState::default();
 
-        assert_eq!(state.update_filter(), ());
+        assert_eq!(state.switch_filter(), ());
     }
 
     #[test]
-    fn test_update_filter() {
+    fn test_switch_filter() {
         let mut state = AppState::initialized();
 
-        assert_eq!(state.get_filter().unwrap(), &Filter::Day);
+        // test that the initialized state has the default filter
+        assert_eq!(
+            state.get_filter().unwrap(),
+            &Filter::Day(NaiveDate::default())
+        );
 
-        state.update_filter();
-        assert_eq!(state.get_filter().unwrap(), &Filter::Week);
+        // test switching from day to week
+        state.switch_filter();
+        assert_eq!(
+            state.get_filter().unwrap(),
+            &Filter::Week(NaiveDate::default().iso_week())
+        );
 
-        state.update_filter();
-        assert_eq!(state.get_filter().unwrap(), &Filter::Month);
+        // switching NaiveDate::default() from week to month results in the last month of the previous year in IsoWeek format
+        let start_of_the_week = NaiveDate::from_ymd_opt(1969, 12, 29).unwrap();
 
-        state.update_filter();
-        assert_eq!(state.get_filter().unwrap(), &Filter::Day);
-    }
+        // test switching from week to month
+        state.switch_filter();
+        assert_eq!(
+            state.get_filter().unwrap(),
+            &Filter::Month(start_of_the_week)
+        );
 
-    #[test]
-    fn test_next_filter() {
-        assert_eq!(Filter::Day.next(), Filter::Week);
-        assert_eq!(Filter::Week.next(), Filter::Month);
-        assert_eq!(Filter::Month.next(), Filter::Day);
+        // test switching from month to day
+        state.switch_filter();
+        assert_eq!(state.get_filter().unwrap(), &Filter::Day(start_of_the_week));
     }
 
     #[test]
     fn test_display_filter() {
-        assert_eq!(format!("{}", Filter::Day), "Day");
-        assert_eq!(format!("{}", Filter::Week), "Week");
-        assert_eq!(format!("{}", Filter::Month), "Month");
+        assert_eq!(format!("{}", Filter::Day(NaiveDate::default())), "Day");
+        assert_eq!(
+            format!("{}", Filter::Week(NaiveDate::default().iso_week())),
+            "Week"
+        );
+        assert_eq!(format!("{}", Filter::Month(NaiveDate::default())), "Month");
+    }
+
+    #[test]
+    fn test_iso_week_to_naive_date() {
+        // Test the the last iso week of the year converts to the appropriate Monday
+        assert_eq!(
+            iso_week_to_naive_date(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap().iso_week()),
+            NaiveDate::from_ymd_opt(2022, 12, 26)
+        );
+
+        // Test that the first iso week of the year converts to the appropriate Monday
+        for day in 2..=8 {
+            assert_eq!(
+                iso_week_to_naive_date(NaiveDate::from_ymd_opt(2023, 1, day).unwrap().iso_week()),
+                NaiveDate::from_ymd_opt(2023, 1, 2)
+            );
+        }
+
+        // Test that the second iso week of the year converts to the appropriate Monday
+        assert_eq!(
+            iso_week_to_naive_date(NaiveDate::from_ymd_opt(2023, 1, 9).unwrap().iso_week()),
+            NaiveDate::from_ymd_opt(2023, 1, 9)
+        );
     }
 }
