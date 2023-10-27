@@ -1,11 +1,11 @@
-use chrono::{Datelike, NaiveDateTime};
+use chrono::{Datelike, NaiveDate, NaiveDateTime};
 use ratatui::{
     prelude::*,
     widgets::{calendar::*, *},
     Frame,
 };
 use std::vec;
-use time::{Date, Month, OffsetDateTime};
+use time::{Date, Month};
 
 use crate::terminal::app::{Actions, App};
 use crate::terminal::state::{AppState, Filter};
@@ -117,18 +117,43 @@ fn draw_title_and_menu<'a>(actions: &Actions) -> Table<'a> {
 fn draw_calendar<'a>(
     state: &AppState,
 ) -> Monthly<'a, ratatui::widgets::calendar::CalendarEventStore> {
-    // let date = OffsetDateTime::now_local().unwrap().date();
-    let events = state.get_events().unwrap();
-    let event_dates: Vec<NaiveDateTime> = events.iter().map(|e| e.dt).collect();
+    let filter = state.get_filter().unwrap();
     let mut calendar_dates: CalendarEventStore = CalendarEventStore::default();
 
-    for date in event_dates {
-        calendar_dates.add(convert_to_date(date), Style::new().fg(Color::Yellow));
+    // Get events based on the current filter enum
+    let items = state
+        .get_events()
+        .unwrap()
+        .iter()
+        .filter(|e| match filter {
+            Filter::Day(date) => &e.dt.date() == date,
+            Filter::Week(week) => &e.dt.date().iso_week() == week,
+            Filter::Month(month) => e.dt.date().month() == month.month(),
+        })
+        .map(|e| e.dt)
+        .collect::<Vec<NaiveDateTime>>();
+
+    for date in &items {
+        calendar_dates.add(convert_to_date(*date), Style::new().fg(Color::Yellow));
     }
 
-    // today() uses OffsetDateTime::now_local() to get the current date and errors with indeterminate offset
-    // todo: figure out a way to create a CalendarEventStore without using today()
-    Monthly::new(OffsetDateTime::now_utc().date(), calendar_dates)
+    let calendar_selection_date = match filter {
+        Filter::Day(date) => *date,
+        Filter::Week(week) => {
+            NaiveDate::from_isoywd_opt(week.year(), week.week(), chrono::Weekday::Mon).unwrap()
+        }
+        Filter::Month(month) => *month,
+    }
+    .and_hms_opt(0, 0, 0)
+    .unwrap();
+
+    // highlight the current selection
+    calendar_dates.add(
+        convert_to_date(calendar_selection_date),
+        Style::new().fg(Color::Green),
+    );
+
+    Monthly::new(convert_to_date(calendar_selection_date), calendar_dates)
         .block(Block::new().padding(Padding::new(1, 1, 1, 1)))
         .show_month_header(Style::new().bold())
         .show_weekdays_header(Style::new().italic())
@@ -147,29 +172,17 @@ fn draw_event_list<'a>(state: &AppState) -> List<'a> {
     let filter = state.get_filter().unwrap();
 
     // filter events based on the current filter enum
-    let items = match filter {
-        Filter::Day(date) => state
-            .get_events()
-            .unwrap()
-            .iter()
-            .filter(|e| &e.dt.date() == date)
-            .map(|e| ListItem::new(format!("{}", e.dt)))
-            .collect::<Vec<ListItem>>(),
-        Filter::Week(week) => state
-            .get_events()
-            .unwrap()
-            .iter()
-            .filter(|e| &e.dt.date().iso_week() == week)
-            .map(|e| ListItem::new(format!("{}", e.dt)))
-            .collect::<Vec<ListItem>>(),
-        Filter::Month(month) => state
-            .get_events()
-            .unwrap()
-            .iter()
-            .filter(|e| e.dt.date().month() == month.month())
-            .map(|e| ListItem::new(format!("{}", e.dt)))
-            .collect::<Vec<ListItem>>(),
-    };
+    let items = state
+        .get_events()
+        .unwrap()
+        .iter()
+        .filter(|e| match filter {
+            Filter::Day(date) => &e.dt.date() == date,
+            Filter::Week(week) => &e.dt.date().iso_week() == week,
+            Filter::Month(month) => e.dt.date().month() == month.month(),
+        })
+        .map(|e| ListItem::new(format!("{}", e.dt)))
+        .collect::<Vec<ListItem>>();
 
     List::new(items)
         .block(
