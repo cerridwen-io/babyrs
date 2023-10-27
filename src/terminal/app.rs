@@ -36,6 +36,8 @@ impl App {
         let actions = vec![
             Action::AddEvent,
             Action::DeleteEvent,
+            Action::NextEvent,
+            Action::PreviousEvent,
             Action::SwitchFilter,
             Action::UpdateEvent,
             Action::LoadCSV,
@@ -63,6 +65,8 @@ impl App {
             match action {
                 Action::AddEvent => AppReturn::Continue,
                 Action::DeleteEvent => AppReturn::Continue,
+                Action::NextEvent => self.next_event(),
+                Action::PreviousEvent => self.previous_event(),
                 Action::SwitchFilter => self.switch_filter(),
                 Action::LoadCSV => AppReturn::Continue,
                 Action::UpdateEvent => AppReturn::Continue,
@@ -95,22 +99,64 @@ impl App {
     }
 
     /// Returns a reference to the application's actions.
+    ///
+    /// # Returns
+    ///
+    /// A reference to the application's actions.
     pub fn actions(&self) -> &Actions {
         &self.actions
     }
 
     /// Returns a reference to the application's state.
+    ///
+    /// # Returns
+    ///
+    /// A reference to the application's state.
     pub fn state(&self) -> &AppState {
         &self.state
     }
 
     /// Adds an event to the application.
+    ///
+    /// # Returns
+    ///
+    /// An `AppReturn` indicating that the application should continue running.
     pub fn add_event(&mut self) {
+        // self.state.add_event();
+        // AppReturn::Continue
         unimplemented!()
     }
 
     /// Deletes an event from the application.
+    ///
+    /// # Returns
+    ///
+    /// An `AppReturn` indicating that the application should continue running.
     pub fn delete_event(&mut self) {
+        // self.state.delete_event();
+        // AppReturn::Continue
+        unimplemented!()
+    }
+
+    /// Move the event selection to the next event.
+    ///
+    /// # Returns
+    ///
+    /// An `AppReturn` indicating that the application should continue running.
+    pub fn next_event(&mut self) -> AppReturn {
+        // self.state.next_event();
+        // AppReturn::Continue
+        unimplemented!()
+    }
+
+    /// Move the event selection to the previous event.
+    ///
+    /// # Returns
+    ///
+    /// An `AppReturn` indicating that the application should continue running.
+    pub fn previous_event(&mut self) -> AppReturn {
+        // self.state.previous_event();
+        // AppReturn::Continue
         unimplemented!()
     }
 
@@ -138,6 +184,8 @@ impl App {
 pub enum Action {
     AddEvent,
     DeleteEvent,
+    NextEvent,
+    PreviousEvent,
     SwitchFilter,
     LoadCSV,
     UpdateEvent,
@@ -151,9 +199,11 @@ impl Action {
     ///
     /// An iterator over [`Action`].
     pub fn iterator() -> Iter<'static, Action> {
-        static ACTIONS: [Action; 6] = [
+        static ACTIONS: [Action; 8] = [
             Action::AddEvent,
             Action::DeleteEvent,
+            Action::NextEvent,
+            Action::PreviousEvent,
             Action::SwitchFilter,
             Action::LoadCSV,
             Action::UpdateEvent,
@@ -171,6 +221,8 @@ impl Action {
         match self {
             Action::AddEvent => &[Key::Char('a')],
             Action::DeleteEvent => &[Key::Char('d')],
+            Action::NextEvent => &[Key::Down],
+            Action::PreviousEvent => &[Key::Up],
             Action::SwitchFilter => &[Key::Char('f')],
             Action::LoadCSV => &[Key::Char('l')],
             Action::UpdateEvent => &[Key::Char('u')],
@@ -185,6 +237,8 @@ impl Display for Action {
         let str = match self {
             Action::AddEvent => "add event",
             Action::DeleteEvent => "delete event",
+            Action::NextEvent => "next event",
+            Action::PreviousEvent => "previous event",
             Action::SwitchFilter => "filter day/week/month",
             Action::LoadCSV => "load csv",
             Action::UpdateEvent => "update event",

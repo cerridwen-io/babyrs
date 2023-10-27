@@ -97,6 +97,8 @@ fn draw_title_and_menu<'a>(actions: &Actions) -> Table<'a> {
         .widths(&[
             Constraint::Min(15),
             Constraint::Min(18),
+            Constraint::Min(19),
+            Constraint::Min(20),
             Constraint::Min(27),
             Constraint::Min(18),
             Constraint::Min(14),
