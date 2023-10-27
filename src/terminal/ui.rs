@@ -1,4 +1,4 @@
-use chrono::{Datelike, NaiveDate, NaiveDateTime};
+use chrono::{Datelike, NaiveDateTime};
 use ratatui::{
     prelude::*,
     widgets::{calendar::*, *},
@@ -129,7 +129,10 @@ fn draw_calendar<'a>(
         .iter()
         .filter(|e| match filter {
             Filter::Day(date) => &e.dt.date() == date,
-            Filter::Week(week) => &e.dt.date().iso_week() == week,
+            Filter::Week(week) => week
+                .week(chrono::Weekday::Mon)
+                .days()
+                .contains(&e.dt.date()),
             Filter::Month(month) => e.dt.date().month() == month.month(),
         })
         .map(|e| e.dt)
@@ -141,9 +144,7 @@ fn draw_calendar<'a>(
 
     let calendar_selection_date = match filter {
         Filter::Day(date) => *date,
-        Filter::Week(week) => {
-            NaiveDate::from_isoywd_opt(week.year(), week.week(), chrono::Weekday::Mon).unwrap()
-        }
+        Filter::Week(week) => *week,
         Filter::Month(month) => *month,
     }
     .and_hms_opt(0, 0, 0)
@@ -180,7 +181,10 @@ fn draw_event_list<'a>(state: &AppState) -> List<'a> {
         .iter()
         .filter(|e| match filter {
             Filter::Day(date) => &e.dt.date() == date,
-            Filter::Week(week) => &e.dt.date().iso_week() == week,
+            Filter::Week(week) => week
+                .week(chrono::Weekday::Mon)
+                .days()
+                .contains(&e.dt.date()),
             Filter::Month(month) => e.dt.date().month() == month.month(),
         })
         .map(|e| ListItem::new(format!("{}", e.dt)))
