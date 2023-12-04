@@ -1,6 +1,8 @@
 /// Module handling database operations for baby events.
 ///
 /// This module provides functionalities for CRUD operations as well as processing CSV files.
+pub mod terminal;
+
 use chrono::{Datelike, NaiveDate};
 use csv::Reader;
 use diesel::prelude::*;

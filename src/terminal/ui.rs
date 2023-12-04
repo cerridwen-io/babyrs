@@ -22,7 +22,7 @@ use crate::terminal::state::{AppState, Filter};
 /// # Type Parameters
 ///
 /// - `B`: Represents the backend, must implement `Backend` trait.
-pub fn draw_ui(rect: &mut Frame, app: &App) {
+pub fn draw_ui(rect: &mut Frame, app: &mut App) {
     let size = rect.size();
     check_size(&size);
 
@@ -60,7 +60,11 @@ pub fn draw_ui(rect: &mut Frame, app: &App) {
 
     // Event list
     let event_list = draw_event_list(app.state());
-    rect.render_widget(event_list, side_chunks[1]);
+    rect.render_stateful_widget(
+        event_list,
+        side_chunks[1],
+        app.state().get_selection().unwrap(),
+    );
 
     // Details
     let details = draw_details(app.state());
@@ -138,10 +142,12 @@ fn draw_calendar<'a>(
         .map(|e| e.dt)
         .collect::<Vec<NaiveDateTime>>();
 
+    // add events to the calendar based on the filter and highlight them
     for date in &items {
         calendar_dates.add(convert_to_date(*date), Style::new().fg(Color::Yellow));
     }
 
+    // get the current filter selection date
     let calendar_selection_date = match filter {
         Filter::Day(date) => *date,
         Filter::Week(week) => *week,
@@ -150,12 +156,13 @@ fn draw_calendar<'a>(
     .and_hms_opt(0, 0, 0)
     .unwrap();
 
-    // highlight the current selection
+    // add the current filter selection to the calendar and highlight it
     calendar_dates.add(
         convert_to_date(calendar_selection_date),
         Style::new().fg(Color::Green),
     );
 
+    // construct the calendar widget
     Monthly::new(convert_to_date(calendar_selection_date), calendar_dates)
         .block(Block::new().padding(Padding::new(1, 1, 1, 1)))
         .show_month_header(Style::new().bold())
@@ -172,24 +179,15 @@ fn draw_calendar<'a>(
 ///
 /// Returns a `List` widget configured to display the body content.
 fn draw_event_list<'a>(state: &AppState) -> List<'a> {
-    let filter = state.get_filter().unwrap();
-
-    // filter events based on the current filter enum
+    // gather pre-filtered events
     let items = state
-        .get_events()
+        .get_filtered_events()
         .unwrap()
         .iter()
-        .filter(|e| match filter {
-            Filter::Day(date) => &e.dt.date() == date,
-            Filter::Week(week) => week
-                .week(chrono::Weekday::Mon)
-                .days()
-                .contains(&e.dt.date()),
-            Filter::Month(month) => e.dt.date().month() == month.month(),
-        })
         .map(|e| ListItem::new(format!("{}", e.dt)))
         .collect::<Vec<ListItem>>();
 
+    // construct the list widget
     List::new(items)
         .block(
             Block::default()
@@ -204,6 +202,7 @@ fn draw_event_list<'a>(state: &AppState) -> List<'a> {
                 .add_modifier(Modifier::BOLD),
         )
         .highlight_symbol(">> ")
+        .highlight_spacing(HighlightSpacing::Always)
         .start_corner(Corner::TopLeft)
         .style(Style::default().fg(Color::White))
 }
@@ -223,6 +222,7 @@ fn draw_details<'a>(state: &AppState) -> Paragraph<'a> {
         AppState::Initialized { .. } => "DETAILS",
     };
 
+    // construct the paragraph widget
     Paragraph::new(text)
         .block(
             Block::default()

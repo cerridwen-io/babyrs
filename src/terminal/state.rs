@@ -1,7 +1,8 @@
-use babyrs::{establish_connection, models::BabyEvent, read_events};
-use chrono::NaiveDate;
+use crate::{establish_connection, models::BabyEvent, read_events};
+use chrono::{Datelike, NaiveDate};
 use diesel::sqlite::SqliteConnection;
 use log::info;
+use ratatui::widgets::ListState;
 use std::{
     fmt::{self, Display},
     vec,
@@ -52,31 +53,6 @@ impl Display for Filter {
     }
 }
 
-/// Convert an `IsoWeek` to a month. in `NaiveDate` format. The month is set to the first day of the month.
-///
-/// # Parameters
-///
-/// * `week`: The `IsoWeek` to convert.
-///
-/// # Returns
-///
-/// The `NaiveDate` corresponding to the first day of the month.
-// fn iso_week_to_naive_date(week: IsoWeek) -> Option<NaiveDate> {
-//     let first_day_of_iso_year = NaiveDate::from_isoywd_opt(week.year(), 1, chrono::Weekday::Mon)?;
-//     let january_1st_weekday = first_day_of_iso_year.weekday();
-
-//     let days_to_add = match january_1st_weekday {
-//         chrono::Weekday::Mon => (week.week() - 1) as i64 * 7,
-//         _ => {
-//             // Handle the case where January 1st is part of the first ISO week of the year.
-//             let days_to_subtract = (7 - january_1st_weekday.num_days_from_monday()) as i64;
-//             (week.week() - 2) as i64 * 7 - days_to_subtract
-//         }
-//     };
-
-//     Some(first_day_of_iso_year + chrono::Duration::days(days_to_add))
-// }
-
 /// Represents the application state.
 ///
 /// The state can either be `Init` for the initial state,
@@ -90,7 +66,11 @@ pub enum AppState {
         baby_events: Vec<BabyEvent>,
         /// The filter for the event list.
         filter: Filter,
-        event_selection: Vec<BabyEvent>,
+        /// filtered event list.
+        /// TODO: filtered_events should be a vector of references into baby_events
+        filtered_events: Vec<BabyEvent>,
+        /// The current selection offset for the filtered event list.
+        selection: ListState,
     },
 }
 
@@ -103,12 +83,14 @@ impl AppState {
     pub fn initialized() -> Self {
         let baby_events = vec![];
         let filter = Filter::default();
-        let event_selection: Vec<BabyEvent> = vec![];
+        let filtered_events = vec![];
+        let selection = ListState::default();
 
         Self::Initialized {
             baby_events,
             filter,
-            event_selection,
+            filtered_events,
+            selection,
         }
     }
 
@@ -125,25 +107,49 @@ impl AppState {
     /// Loads the events from the database into the state.
     ///
     /// Does nothing if the state is not `Initialized`.
-    pub fn load_events(&mut self) {
+    pub fn load_events(&mut self, connection: Option<&mut SqliteConnection>) {
         if let Self::Initialized {
             baby_events,
-            event_selection,
             filter,
-            ..
+            filtered_events,
+            selection,
         } = self
         {
             info!("Loading events from database...");
 
             // Establish connection to database
-            let connection: &mut SqliteConnection = &mut establish_connection();
-            *baby_events = read_events(connection);
+            let mut local_connection;
+            let conn = match connection {
+                Some(c) => c,
+                None => {
+                    local_connection = establish_connection();
+                    &mut local_connection
+                }
+            };
 
-            // update the day/week/month selection to the latest event
-            *event_selection = vec![*baby_events.last().unwrap()];
+            // let connection: &mut SqliteConnection = &mut establish_connection();
+            *baby_events = read_events(conn);
 
-            // set the filter to the latest event
+            // initialize the filter to the latest event (day)
             *filter = Filter::Day(baby_events.last().unwrap().dt.date());
+
+            // initialize the filtered events to the last day
+            // TODO: simplify the match to just be the day filter (we know it won't ever be week or month at this point)
+            *filtered_events = baby_events
+                .clone()
+                .into_iter()
+                .filter(|e| match filter {
+                    Filter::Day(date) => &e.dt.date() == date,
+                    Filter::Week(week) => week
+                        .week(chrono::Weekday::Mon)
+                        .days()
+                        .contains(&e.dt.date()),
+                    Filter::Month(month) => e.dt.date().month() == month.month(),
+                })
+                .collect::<Vec<BabyEvent>>();
+
+            // reset the selection offset
+            *selection = ListState::default();
         }
     }
 
@@ -175,15 +181,152 @@ impl AppState {
         }
     }
 
-    /// Switches the filter to the next filter in the sequence.
+    /// Switches the filter to the next filter in the sequence. Switching the filter resets the selection offset to 0.
+    /// It also recalculates the filtered events based on the new filter.
     ///
     /// # Returns
     ///
     /// - `Some(Filter)` containing the filter if the state is `Initialized`.
     /// - `None` otherwise.
     pub fn switch_filter(&mut self) {
-        if let Self::Initialized { filter, .. } = self {
+        if let Self::Initialized {
+            baby_events,
+            filter,
+            filtered_events,
+            selection,
+            ..
+        } = self
+        {
+            // switch the filter
             *filter = filter.switch();
+
+            // recalculate the filtered events
+            *filtered_events = baby_events
+                .clone()
+                .into_iter()
+                .filter(|e| match filter {
+                    Filter::Day(date) => &e.dt.date() == date,
+                    Filter::Week(week) => week
+                        .week(chrono::Weekday::Mon)
+                        .days()
+                        .contains(&e.dt.date()),
+                    Filter::Month(month) => e.dt.date().month() == month.month(),
+                })
+                .collect::<Vec<BabyEvent>>();
+
+            // reset the selection offset
+            *selection = ListState::default();
+        }
+    }
+
+    /// Returns the current value of `filtered_events` if the state is `Initialized`.
+    /// TODO: filtered_events should be a vector of references into baby_events
+    ///
+    /// # Returns
+    ///
+    /// - `Some(Vec<BabyEvent>)` containing the filtered events if the state is `Initialized`.
+    /// - `None` otherwise.
+    pub fn get_filtered_events(&self) -> Option<&Vec<BabyEvent>> {
+        if let Self::Initialized {
+            filtered_events, ..
+        } = self
+        {
+            Some(filtered_events)
+        } else {
+            None
+        }
+    }
+
+    /// Returns the current value of `selection` if the state is `Initialized`.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(usize)` containing the selection offset if the state is `Initialized`.
+    /// - `None` otherwise.
+    pub fn get_selection(&mut self) -> Option<&mut ListState> {
+        if let Self::Initialized { selection, .. } = self {
+            Some(selection)
+        } else {
+            None
+        }
+    }
+
+    /// Increments the selection offset by 1 if the state is `Initialized`. Loops back to the beginning of the list if
+    /// the selection offset is already at the end of the list.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(usize)` containing the selection offset if the state is `Initialized`.
+    /// - `None` otherwise.
+    pub fn increment_selection(&mut self) {
+        if let Self::Initialized {
+            selection,
+            filtered_events,
+            ..
+        } = self
+        {
+            if filtered_events.is_empty() {
+                selection.select(None);
+            } else {
+                let i = match selection.selected() {
+                    Some(i) => {
+                        if i >= filtered_events.len() - 1 {
+                            0
+                        } else {
+                            i + 1
+                        }
+                    }
+                    None => 0,
+                };
+
+                selection.select(Some(i));
+            }
+        }
+    }
+
+    /// Decrements the selection offset by 1 if the state is `Initialized`. Loops back to the end of the list if the
+    /// selection offset is already at the beginning of the list.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(usize)` containing the selection offset if the state is `Initialized`.
+    /// - `None` otherwise.
+    pub fn decrement_selection(&mut self) {
+        if let Self::Initialized {
+            selection,
+            filtered_events,
+            ..
+        } = self
+        {
+            if filtered_events.is_empty() {
+                selection.select(None);
+            } else {
+                let i = match selection.selected() {
+                    Some(i) => {
+                        if i == 0 {
+                            filtered_events.len() - 1
+                        } else {
+                            i - 1
+                        }
+                    }
+                    None => 0,
+                };
+
+                selection.select(Some(i));
+            }
+        }
+    }
+
+    /// Unselects the current selected item if any. Implementation of `ListState` ensures that the stored offset is
+    /// also reset.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(usize)` containing the selection offset if the state is `Initialized`.
+    /// - `None` otherwise.
+    pub fn unselect(&mut self) {
+        if let Self::Initialized { selection, .. } = self {
+            selection.select(None);
         }
     }
 }
@@ -207,6 +350,7 @@ mod tests {
 
         assert!(state.is_initialized());
         assert!(state.get_events().unwrap().is_empty());
+        assert!(state.get_filtered_events().unwrap().is_empty());
         assert_eq!(
             state.get_filter().unwrap(),
             &Filter::Day(NaiveDate::default())
@@ -224,7 +368,7 @@ mod tests {
     fn test_load_events_not_initialized() {
         let mut state = AppState::default();
 
-        state.load_events();
+        state.load_events(None);
     }
 
     #[test]
@@ -235,7 +379,7 @@ mod tests {
     }
 
     #[test]
-    fn test_update_filter_not_initialized() {
+    fn test_switch_filter_not_initialized() {
         let mut state = AppState::default();
 
         assert_eq!(state.switch_filter(), ());
@@ -252,9 +396,6 @@ mod tests {
         // test switching from day to week
         state.switch_filter();
         assert_eq!(state.get_filter().unwrap(), &Filter::Week(test_date));
-
-        // switching NaiveDate::default() from week to month results in the last month of the previous year in IsoWeek format
-        // let start_of_the_week = NaiveDate::from_ymd_opt(1969, 12, 29).unwrap();
 
         // test switching from week to month
         state.switch_filter();
@@ -274,26 +415,21 @@ mod tests {
         assert_eq!(format!("{}", Filter::Month(test_date)), "Month");
     }
 
-    // #[test]
-    // fn test_iso_week_to_naive_date() {
-    //     // Test the the last iso week of the year converts to the appropriate Monday
-    //     assert_eq!(
-    //         iso_week_to_naive_date(NaiveDate::from_ymd_opt(2023, 1, 1).unwrap().iso_week()),
-    //         NaiveDate::from_ymd_opt(2022, 12, 26)
-    //     );
+    #[test]
+    fn test_unselect() {
+        let mut state = AppState::initialized();
 
-    //     // Test that the first iso week of the year converts to the appropriate Monday
-    //     for day in 2..=8 {
-    //         assert_eq!(
-    //             iso_week_to_naive_date(NaiveDate::from_ymd_opt(2023, 1, day).unwrap().iso_week()),
-    //             NaiveDate::from_ymd_opt(2023, 1, 2)
-    //         );
-    //     }
+        state.unselect();
 
-    //     // Test that the second iso week of the year converts to the appropriate Monday
-    //     assert_eq!(
-    //         iso_week_to_naive_date(NaiveDate::from_ymd_opt(2023, 1, 9).unwrap().iso_week()),
-    //         NaiveDate::from_ymd_opt(2023, 1, 9)
-    //     );
-    // }
+        assert!(state.get_selection().unwrap().selected().is_none());
+    }
+
+    #[test]
+    fn test_unselect_not_initialized() {
+        let mut state = AppState::default();
+
+        state.unselect();
+
+        assert!(state.get_selection().is_none());
+    }
 }

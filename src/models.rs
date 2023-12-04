@@ -47,7 +47,7 @@ pub struct BabyEvent {
 /// - `breastmilk`: Quantity of breastmilk consumed.
 /// - `formula`: Quantity of formula consumed.
 /// - `pump`: Duration in minutes of pumping.
-#[derive(Insertable, Debug, Deserialize)]
+#[derive(Insertable, Debug, Deserialize, Copy, Clone)]
 #[diesel(table_name = crate::schema::events)]
 pub struct NewBabyEvent {
     pub dt: NaiveDateTime,

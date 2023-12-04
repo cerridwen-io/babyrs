@@ -94,7 +94,7 @@ impl App {
     ///
     /// An `AppReturn` indicating that the application should continue running.
     pub fn load_events(&mut self) -> AppReturn {
-        self.state.load_events();
+        self.state.load_events(None);
         AppReturn::Continue
     }
 
@@ -112,8 +112,8 @@ impl App {
     /// # Returns
     ///
     /// A reference to the application's state.
-    pub fn state(&self) -> &AppState {
-        &self.state
+    pub fn state(&mut self) -> &mut AppState {
+        &mut self.state
     }
 
     /// Adds an event to the application.
@@ -144,9 +144,8 @@ impl App {
     ///
     /// An `AppReturn` indicating that the application should continue running.
     pub fn next_event(&mut self) -> AppReturn {
-        // self.state.next_event();
-        // AppReturn::Continue
-        unimplemented!()
+        self.state.increment_selection();
+        AppReturn::Continue
     }
 
     /// Move the event selection to the previous event.
@@ -155,9 +154,8 @@ impl App {
     ///
     /// An `AppReturn` indicating that the application should continue running.
     pub fn previous_event(&mut self) -> AppReturn {
-        // self.state.previous_event();
-        // AppReturn::Continue
-        unimplemented!()
+        self.state.decrement_selection();
+        AppReturn::Continue
     }
 
     /// Switches to the next filter.

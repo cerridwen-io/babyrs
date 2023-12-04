@@ -1,6 +1,6 @@
 pub mod app;
 mod events;
-mod state;
+pub mod state;
 mod ui;
 
 use app::{App, AppReturn};

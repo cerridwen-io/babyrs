@@ -1,9 +1,7 @@
-pub mod terminal;
-
 use diesel::prelude::*;
 use log::info;
 
-use crate::terminal::app::App;
+use babyrs::terminal::{self, app::App};
 use babyrs::{establish_connection, process_csv};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

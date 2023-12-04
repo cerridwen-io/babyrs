@@ -1,29 +1,9 @@
-//! This module contains integration tests for baby-related event handling using the babyrs library.
+//! Integration tests for baby-related event handling and database interactions.
+mod common;
 
+use babyrs::models::{BabyEvent, NewBabyEvent};
 use babyrs::{create_event, establish_connection, read_events, write_event};
 use diesel::prelude::*;
-use diesel::sqlite::Sqlite;
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
-use babyrs::models::{BabyEvent, NewBabyEvent};
-use std::error::Error;
-
-/// Run pending database migrations.
-///
-/// # Arguments
-///
-/// * `connection`: Mutable reference to the database connection
-///
-/// # Errors
-///
-/// Returns an error if the migration fails.
-fn run_migrations(
-    connection: &mut impl MigrationHarness<Sqlite>,
-) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
-    connection.run_pending_migrations(MIGRATIONS)?;
-
-    Ok(())
-}
 
 /// Test database connection establishment.
 ///
@@ -48,7 +28,7 @@ fn test_write_event() {
 
     let connection: &mut SqliteConnection = &mut establish_connection();
 
-    run_migrations(connection).expect("Error running migrations");
+    common::run_migrations(connection).expect("Error running migrations");
 
     let new_event: NewBabyEvent = create_event(
         Some(true),
@@ -88,7 +68,7 @@ fn test_read_events() {
 
     let connection: &mut SqliteConnection = &mut establish_connection();
 
-    run_migrations(connection).expect("Error running migrations");
+    common::run_migrations(connection).expect("Error running migrations");
 
     for i in 0..7 {
         let new_event: NewBabyEvent = create_event(
@@ -119,7 +99,7 @@ fn test_update_event() {
 
     let connection: &mut SqliteConnection = &mut establish_connection();
 
-    run_migrations(connection).expect("Error running migrations");
+    common::run_migrations(connection).expect("Error running migrations");
 
     let new_event: NewBabyEvent = create_event(
         Some(true),
@@ -181,7 +161,7 @@ fn test_delete_event() {
 
     let connection: &mut SqliteConnection = &mut establish_connection();
 
-    run_migrations(connection).expect("Error running migrations");
+    common::run_migrations(connection).expect("Error running migrations");
 
     let new_event: NewBabyEvent = create_event(
         Some(true),
@@ -223,7 +203,7 @@ fn test_process_csv() {
 
     let connection: &mut SqliteConnection = &mut establish_connection();
 
-    run_migrations(connection).expect("Error running migrations");
+    common::run_migrations(connection).expect("Error running migrations");
 
     babyrs::process_csv(connection, "sample/example.csv").expect("Error processing CSV");
 
