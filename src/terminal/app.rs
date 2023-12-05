@@ -19,7 +19,7 @@ pub enum AppReturn {
 /// The main application struct, holding all actions and state.
 pub struct App {
     actions: Actions,
-    state: AppState,
+    pub state: AppState,
 }
 
 impl App {

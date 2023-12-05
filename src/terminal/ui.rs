@@ -23,6 +23,8 @@ use crate::terminal::state::{AppState, Filter};
 ///
 /// - `B`: Represents the backend, must implement `Backend` trait.
 pub fn draw_ui(rect: &mut Frame, app: &mut App) {
+    let selection = app.state().get_selection().unwrap().selected();
+
     let size = rect.size();
     check_size(&size);
 
@@ -67,7 +69,7 @@ pub fn draw_ui(rect: &mut Frame, app: &mut App) {
     );
 
     // Details
-    let details = draw_details(app.state());
+    let details = draw_details(app.state(), selection);
     rect.render_widget(details, horizontal_chunks[1]);
 }
 
@@ -216,10 +218,27 @@ fn draw_event_list<'a>(state: &AppState) -> List<'a> {
 /// # Returns
 ///
 /// Returns a `Paragraph` widget configured to display the details.
-fn draw_details<'a>(state: &AppState) -> Paragraph<'a> {
+fn draw_details<'a>(state: &AppState, selection: Option<usize>) -> Paragraph<'a> {
+    let event = selection.map(|i| state.get_filtered_events().unwrap()[i]);
+
     let text = match state {
-        AppState::Init => "Welcome to babyrs! Press <q> to quit.",
-        AppState::Initialized { .. } => "DETAILS",
+        AppState::Init => "Welcome to babyrs! Press <q> to quit.".to_owned(),
+        AppState::Initialized { .. } => match event {
+            Some(e) => format!(
+                "Event ID: {}\n\nDate: {}\n\nTime: {}\n\nStool: {}\n\nUrine: {}\n\nSkin-to-Skin: {}\n\nBreastfeed: {}\n\nBreastmilk: {}\n\nFormula: {}\n\nPump: {}\n\n",
+                e.id,
+                e.dt.date(),
+                e.dt.time(),
+                e.stool,
+                e.urine,
+                e.skin2skin,
+                e.breastfeed,
+                e.breastmilk,
+                e.formula,
+                e.pump,
+            ).to_owned(),
+            None => "No event selected.".to_owned()
+        },
     };
 
     // construct the paragraph widget
