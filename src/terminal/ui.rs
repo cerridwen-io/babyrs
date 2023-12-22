@@ -29,32 +29,29 @@ pub fn draw_ui(rect: &mut Frame, app: &mut App) {
     check_size(&size);
 
     // Vertical layout
-    let vertical_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
-        .split(size);
+    let vertical_chunks = Layout::new(
+        Direction::Vertical,
+        [Constraint::Length(3), Constraint::Min(0)],
+    )
+    .split(size);
 
     // Title and menu
     let title_and_menu = draw_title_and_menu(app.actions());
     rect.render_widget(title_and_menu, vertical_chunks[0]);
 
     // Horizontal layout for body
-    let horizontal_chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Min(24), Constraint::Min(size.width - 24)].as_ref())
-        .split(vertical_chunks[1]);
+    let horizontal_chunks = Layout::new(
+        Direction::Horizontal,
+        Constraint::from_mins([24, size.width - 24]),
+    )
+    .split(vertical_chunks[1]);
 
     // Vertical layout for calendar and events
-    let side_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(
-            [
-                Constraint::Min(9),
-                Constraint::Min(vertical_chunks[1].height - 9),
-            ]
-            .as_ref(),
-        )
-        .split(horizontal_chunks[0]);
+    let side_chunks = Layout::new(
+        Direction::Vertical,
+        Constraint::from_mins([9, vertical_chunks[1].height - 9]),
+    )
+    .split(horizontal_chunks[0]);
 
     // Calendar
     let calendar = draw_calendar(app.state());
@@ -69,22 +66,18 @@ pub fn draw_ui(rect: &mut Frame, app: &mut App) {
     );
 
     // Vertical layout for details and graphing
-    let data_chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(
-            [
-                Constraint::Min(12),
-                Constraint::Min(vertical_chunks[1].height - 12),
-            ]
-            .as_ref(),
-        )
-        .split(horizontal_chunks[1]);
+    let data_chunks = Layout::new(
+        Direction::Vertical,
+        Constraint::from_mins([12, vertical_chunks[1].height - 12]),
+    )
+    .split(horizontal_chunks[1]);
 
     //horizontal layout for details
-    let detail_chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Min(25), Constraint::Min(size.width - 25)].as_ref())
-        .split(data_chunks[0]);
+    let detail_chunks = Layout::new(
+        Direction::Horizontal,
+        Constraint::from_mins([25, size.width - 25]),
+    )
+    .split(data_chunks[0]);
 
     // Details
     let event_details = draw_event_details(app.state(), selection);
@@ -118,25 +111,18 @@ fn draw_title_and_menu<'a>(actions: &Actions) -> Table<'a> {
     }
 
     // A single row with the menu items
-    Table::new(vec![Row::new(menu_items)])
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(BorderType::Plain)
-                .title(" Babyrs ")
-                .title_style(Style::new().blue().bold()),
-        )
-        .widths(&[
-            Constraint::Min(9),
-            Constraint::Min(12),
-            Constraint::Min(12),
-            Constraint::Min(13),
-            Constraint::Min(11),
-            Constraint::Min(19),
-            Constraint::Min(14),
-            Constraint::Min(10),
-        ])
-        .column_spacing(1)
+    Table::new(
+        vec![Row::new(menu_items)],
+        &Constraint::from_mins([9, 12, 12, 13, 11, 19, 14, 10]),
+    )
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Plain)
+            .title(" Babyrs ")
+            .title_style(Style::new().blue().bold()),
+    )
+    .column_spacing(1)
 }
 
 /// Creates a `Calendar` widget.
@@ -231,7 +217,7 @@ fn draw_event_list<'a>(state: &AppState) -> List<'a> {
         )
         .highlight_symbol(">> ")
         .highlight_spacing(HighlightSpacing::Always)
-        .start_corner(Corner::TopLeft)
+        .direction(ListDirection::TopToBottom)
         .style(Style::default().fg(Color::White))
 }
 

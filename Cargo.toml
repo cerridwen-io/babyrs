@@ -1,6 +1,6 @@
 [package]
 name = "babyrs"
-version = "0.1.26"
+version = "0.1.27"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -14,6 +14,6 @@ diesel_migrations = "2.1.0"
 dotenvy = "0.15.7"
 lazy_static = "1.4.0"
 log = "0.4.20"
-ratatui = {version = "0.24.0", features = ["widget-calendar"]}
+ratatui = {version = "0.25.0", features = ["widget-calendar"]}
 serde = "1.0.188"
 time ={version = "0.3.29", features = ["local-offset"]}
