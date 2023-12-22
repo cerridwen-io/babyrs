@@ -68,9 +68,35 @@ pub fn draw_ui(rect: &mut Frame, app: &mut App) {
         app.state().get_selection().unwrap(),
     );
 
+    // Vertical layout for details and graphing
+    let data_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Min(12),
+                Constraint::Min(vertical_chunks[1].height - 12),
+            ]
+            .as_ref(),
+        )
+        .split(horizontal_chunks[1]);
+
+    //horizontal layout for details
+    let detail_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Min(25), Constraint::Min(size.width - 25)].as_ref())
+        .split(data_chunks[0]);
+
     // Details
-    let details = draw_details(app.state(), selection);
-    rect.render_widget(details, horizontal_chunks[1]);
+    let event_details = draw_event_details(app.state(), selection);
+    rect.render_widget(event_details, detail_chunks[0]);
+
+    // Statistics
+    let statistics = draw_statistics(app.state());
+    rect.render_widget(statistics, detail_chunks[1]);
+
+    // Chart
+    let chart = draw_chart(app.state());
+    rect.render_widget(chart, data_chunks[1]);
 }
 
 /// Creates a `Table` widget for the title and menu.
@@ -101,12 +127,12 @@ fn draw_title_and_menu<'a>(actions: &Actions) -> Table<'a> {
                 .title_style(Style::new().blue().bold()),
         )
         .widths(&[
-            Constraint::Min(15),
-            Constraint::Min(18),
+            Constraint::Min(9),
+            Constraint::Min(12),
+            Constraint::Min(12),
+            Constraint::Min(13),
+            Constraint::Min(11),
             Constraint::Min(19),
-            Constraint::Min(20),
-            Constraint::Min(27),
-            Constraint::Min(18),
             Constraint::Min(14),
             Constraint::Min(10),
         ])
@@ -218,14 +244,14 @@ fn draw_event_list<'a>(state: &AppState) -> List<'a> {
 /// # Returns
 ///
 /// Returns a `Paragraph` widget configured to display the details.
-fn draw_details<'a>(state: &AppState, selection: Option<usize>) -> Paragraph<'a> {
+fn draw_event_details<'a>(state: &AppState, selection: Option<usize>) -> Paragraph<'a> {
     let event = selection.map(|i| state.get_filtered_events().unwrap()[i]);
 
     let text = match state {
         AppState::Init => "Welcome to babyrs! Press <q> to quit.".to_owned(),
         AppState::Initialized { .. } => match event {
-            Some(e) => format!(
-                "Event ID: {}\n\nDate: {}\n\nTime: {}\n\nStool: {}\n\nUrine: {}\n\nSkin-to-Skin: {}\n\nBreastfeed: {}\n\nBreastmilk: {}\n\nFormula: {}\n\nPump: {}\n\n",
+            // TODO: is there a better way to construct a string that doesn't allocate to the heap? Also that isn't this ugly?
+            Some(e) => format!("ID: {0} \n\rDate: {1} \n\rTime: {2} \n\rStool: {3} \n\rUrine: {4} \n\rSkin-to-Skin(min): {5} \n\rBreastfeed(min): {6} \n\rBreastmilk(ml): {7} \n\rFormula(ml): {8} \n\rPump(ml): {9}",
                 e.id,
                 e.dt.date(),
                 e.dt.time(),
@@ -236,8 +262,9 @@ fn draw_details<'a>(state: &AppState, selection: Option<usize>) -> Paragraph<'a>
                 e.breastmilk,
                 e.formula,
                 e.pump,
-            ).to_owned(),
-            None => "No event selected.".to_owned()
+            )
+            .to_owned(),
+            None => "No event selected.".to_owned(),
         },
     };
 
@@ -247,11 +274,61 @@ fn draw_details<'a>(state: &AppState, selection: Option<usize>) -> Paragraph<'a>
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Plain)
-                .title(format!(" {} Details ", state.get_filter().unwrap()))
+                .title(" Event Details ")
                 .title_style(Style::new().blue().bold()),
         )
         .style(Style::default().fg(Color::White))
         .alignment(Alignment::Left)
+}
+
+/// Creates a `Paragraph` widget containing statistics
+///
+/// # Arguments
+///
+/// - `state`: Current `AppState` to display statistics.
+///
+/// # Returns
+///
+/// Returns a `Paragraph` widget configured to display the statistics.
+fn draw_statistics<'a>(state: &AppState) -> Paragraph<'a> {
+    let text = match state {
+        AppState::Init => "Not implemented...".to_owned(),
+        AppState::Initialized { .. } => "Not Implemented...".to_owned(),
+    };
+
+    // construct the paragraph widget
+    Paragraph::new(text)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Plain)
+                .title(format!(" {} Statistics ", state.get_filter().unwrap()))
+                .title_style(Style::new().blue().bold()),
+        )
+        .style(Style::default().fg(Color::White))
+        .alignment(Alignment::Left)
+}
+
+/// Creates a `BarChart` widget containing statistics
+///
+/// # Arguments
+///
+/// - `state`: Current `AppState` to display statistics.
+///
+/// # Returns
+///
+/// Returns a `BarChart` widget configured to display the statistics.
+fn draw_chart<'a>(_state: &AppState) -> BarChart<'a> {
+    // construct the BarChart widget
+    BarChart::default()
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Plain),
+        )
+        .style(Style::default().fg(Color::White))
+        .bar_width(2)
+        .data(&[("B0", 0), ("B1", 2), ("B2", 4), ("B3", 3)])
 }
 
 /// Validates the terminal size to ensure it meets minimum requirements.

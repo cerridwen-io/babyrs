@@ -36,10 +36,10 @@ impl App {
         let actions = vec![
             Action::AddEvent,
             Action::DeleteEvent,
+            Action::UpdateEvent,
             Action::NextEvent,
             Action::PreviousEvent,
             Action::SwitchFilter,
-            Action::UpdateEvent,
             Action::LoadCSV,
             Action::Quit,
         ]
@@ -200,11 +200,11 @@ impl Action {
         static ACTIONS: [Action; 8] = [
             Action::AddEvent,
             Action::DeleteEvent,
+            Action::UpdateEvent,
             Action::NextEvent,
             Action::PreviousEvent,
             Action::SwitchFilter,
             Action::LoadCSV,
-            Action::UpdateEvent,
             Action::Quit,
         ];
         ACTIONS.iter()
@@ -233,13 +233,13 @@ impl Display for Action {
     /// Formats the `Action` for display purposes.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str = match self {
-            Action::AddEvent => "add event",
-            Action::DeleteEvent => "delete event",
-            Action::NextEvent => "next event",
-            Action::PreviousEvent => "previous event",
-            Action::SwitchFilter => "filter day/week/month",
+            Action::AddEvent => "add",
+            Action::DeleteEvent => "delete",
+            Action::NextEvent => "next",
+            Action::PreviousEvent => "prev",
+            Action::SwitchFilter => "switch filter",
             Action::LoadCSV => "load csv",
-            Action::UpdateEvent => "update event",
+            Action::UpdateEvent => "update",
             Action::Quit => "quit",
         };
         write!(f, "{}", str)
